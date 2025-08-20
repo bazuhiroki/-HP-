@@ -1,0 +1,94 @@
+/* 基本設定 */
+body {
+    font-family: sans-serif;
+    margin: 0;
+    background-color: #f9f8f3; /* 参考サイトの背景色 */
+    color: #333;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ヘッダー */
+.site-header {
+    padding: 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #eee;
+}
+
+.site-header h1 {
+    font-size: 24px;
+    margin: 0;
+}
+
+.site-header nav ul {
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap; /* 折り返し設定 */
+    gap: 15px;
+}
+
+/* メインコンテンツ */
+main {
+    padding: 20px;
+}
+
+/* メイン画像 */
+.hero img {
+    width: 100%;
+    height: auto;
+    max-height: 400px; /* 高さを制限 */
+    object-fit: cover; /* 画像の比率を保ったままトリミング */
+}
+
+/* ニュースセクション */
+.news {
+    margin-top: 40px;
+}
+
+.news h2 {
+    text-align: center;
+    font-weight: normal;
+}
+
+.news-list article {
+    display: flex;
+    gap: 20px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* グリッドメニュー */
+.grid-menu {
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* レスポンシブ対応 */
+    gap: 20px;
+}
+
+.grid-item {
+    background-color: #fff;
+    border: 1px solid #eee;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    transition: opacity 0.3s; /* ホバーエフェクト */
+}
+
+.grid-item:hover {
+    opacity: 0.7;
+}
+
+/* フッター */
+.site-footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+    font-size: 12px;
+}
