@@ -3,62 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>私のホームページ</title>
+    <title>思考のキャンバス</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header class="site-header">
-        <h1>HP.</h1>
-        <nav>
-            <ul>
-                <li><a href="#">読書</a></li>
-                <li><a href="#">ランニング</a></li>
-                <li><a href="#">F1</a></li>
-                <li><a href="#">映画</a></li>
-                <li><a href="#">漫画</a></li>
-                <li><a href="#">建築</a></li>
-                <li><a href="#">茶道</a></li>
-                <li><a href="#">野球</a></li>
-                <li><a href="#">ゴルフ</a></li>
-                <li><a href="#">旅行</a></li>
-                <li><a href="#">学習</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <main>
-        <section class="hero">
-            <img src="https://images.unsplash.com/photo-1493612276216-82eb9f46f055?q=80&w=2070" alt="メインイメージ">
-        </section>
-
-        <section class="news">
-            <h2>NEWS</h2>
-            <div class="news-list">
-                <article>
-                    <time>2024.08.20</time>
-                    <p>サイトを公開しました。</p>
-                </article>
-                <article>
-                    <time>2024.08.19</time>
-                    <p>ニュースセクションのテストです。</p>
-                </article>
+    <div id="viewport">
+        <div id="canvas">
+            
+            <div class="object object-text" style="top: 200px; left: 300px;">
+                <h2>読書</h2>
+                <p>思索の源泉。</p>
             </div>
-        </section>
 
-        <section class="grid-menu">
-            <div class="grid-item"><a href="#">読書</a></div>
-            <div class="grid-item"><a href="#">ランニング</a></div>
-            <div class="grid-item"><a href="#">F1</a></div>
-            <div class="grid-item"><a href="#">映画</a></div>
-            <div class="grid-item"><a href="#">漫画</a></div>
-            <div class="grid-item"><a href="#">建築</a></div>
-        </section>
-    </main>
+            <div class="object object-image" style="top: 500px; left: 600px; width: 300px;">
+                <img src="https://images.unsplash.com/photo-1599420186946-7b6fb4e297f0?q=80&w=1887" alt="建築">
+                <h2>建築</h2>
+            </div>
 
-    <footer class="site-footer">
-        <p>&copy; 2024 私のホームページ</p>
-    </footer>
+            <div class="object object-text" style="top: 800px; left: 150px; font-size: 24px;">
+                <p>F1</p>
+            </div>
 
+            <div class="object object-quote" style="top: 250px; left: 800px; width: 250px;">
+                <p>「整っているから有限であり、無秩序だから無限である」</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
