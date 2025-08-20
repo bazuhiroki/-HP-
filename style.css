@@ -1,22 +1,13 @@
-/* --- 1. Google Fontsの読み込み --- */
-@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap');
-
 /* 基本設定 */
 body {
     margin: 0;
-    font-family: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: #f0f2f5;
     color: #1c1e21;
     overflow: hidden;
 }
-.site-header {
-    padding: 20px 5%;
-}
-.site-header h1 {
-    font-size: 24px;
-    margin: 0;
-    font-weight: 700;
-}
+.site-header { padding: 20px 5%; }
+.site-header h1 { font-size: 24px; margin: 0; font-weight: 600; }
 
 /* ニュースバー */
 .news-bar {
@@ -30,15 +21,8 @@ body {
     align-items: center;
     box-sizing: border-box;
 }
-.news-label {
-    font-weight: 700;
-    margin-right: 15px;
-    color: #3d5a80;
-}
-.news-content {
-    margin: 0;
-    font-size: 14px;
-}
+.news-label { font-weight: 600; margin-right: 15px; color: #3d5a80; }
+.news-content { margin: 0; font-size: 14px; }
 
 /* Gridコンテナ */
 .grid-container {
@@ -62,17 +46,7 @@ body {
     transition: all 0.5s ease-in-out;
     position: relative;
     overflow: hidden;
-    background-size: cover;
-    background-position: center;
-    opacity: 0;
-    animation: floatUp 0.6s ease-out forwards;
 }
-
-.grid-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12), 0 0 15px rgba(61, 90, 128, 0.3);
-}
-
 
 /* アイテム内コンテンツ */
 .grid-item .content-main {
@@ -81,10 +55,7 @@ body {
     align-items: center;
     width: 100%;
     height: 100%;
-    font-size: 18px;
-    font-weight: 700;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.4);
+    font-size: 16px;
     transition: opacity 0.3s ease-in-out;
 }
 .grid-item .content-detail {
@@ -97,9 +68,18 @@ body {
     transition: opacity 0.3s ease-in-out 0.3s;
     overflow: auto;
     background-color: white;
-    /* ▼▼▼【修正点】透明な時はクリックできないようにする ▼▼▼ */
-    pointer-events: none;
 }
+.grid-item .content-detail h2 { margin-top: 0; }
+
+/* Notion埋め込み用iframeのスタイル */
+.notion-iframe {
+    width: 100%;
+    /* ▼▼▼【修正点】高さを100%に戻します ▼▼▼ */
+    height: 100%;
+    border: none;
+}
+
+/* 全画面表示ボタン */
 .fullscreen-button {
     position: absolute;
     bottom: 20px;
@@ -115,30 +95,8 @@ body {
     z-index: 110;
 }
 
-/* --- 登場アニメーション --- */
-@keyframes floatUp {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* 時間差で表示 */
-.grid-item:nth-child(1)  { animation-delay: 0.1s; }
-.grid-item:nth-child(2)  { animation-delay: 0.15s; }
-.grid-item:nth-child(3)  { animation-delay: 0.2s; }
-.grid-item:nth-child(4)  { animation-delay: 0.25s; }
-.grid-item:nth-child(5)  { animation-delay: 0.3s; }
-.grid-item:nth-child(6)  { animation-delay: 0.35s; }
-.grid-item:nth-child(7)  { animation-delay: 0.4s; }
-.grid-item:nth-child(8)  { animation-delay: 0.45s; }
-.grid-item:nth-child(9)  { animation-delay: 0.5s; }
-.grid-item:nth-child(10) { animation-delay: 0.55s; }
-.grid-item:nth-child(11) { animation-delay: 0.6s; }
-
-/* --- フォーカス・モード --- */
-.grid-container.focus-active .grid-item {
-    opacity: 0.3;
-    transform: scale(0.9);
-}
+/* フォーカス・モード */
+.grid-container.focus-active .grid-item { opacity: 0.3; transform: scale(0.9); }
 .grid-container.focus-active .grid-item.is-focused {
     opacity: 1;
     transform: scale(1);
@@ -146,23 +104,21 @@ body {
     z-index: 100;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
-.grid-container.focus-active .grid-item.is-focused .content-main {
-    opacity: 0;
+.grid-container.focus-active .grid-item.is-focused .content-main { opacity: 0; }
+.grid-container.focus-active .grid-item.is-focused .content-detail { opacity: 1; }
+/* 映画カードのフォーカス時はpaddingを0に */
+.grid-container.focus-active .grid-item.movie.is-focused .content-detail {
+    padding: 0;
 }
-.grid-container.focus-active .grid-item.is-focused .content-detail {
-    opacity: 1;
-    /* ▼▼▼【修正点】表示されたらクリックできるように戻す ▼▼▼ */
-    pointer-events: auto;
-}
-.grid-container.focus-active .grid-item.is-focused .fullscreen-button {
-    opacity: 1;
-}
+.grid-container.focus-active .grid-item.is-focused .fullscreen-button { opacity: 1; }
 
 /* 全画面オーバーレイ */
 .fullscreen-overlay {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background-color: #fff;
     z-index: 200;
     padding: 40px;
@@ -180,7 +136,4 @@ body {
     cursor: pointer;
     color: #333;
 }
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
