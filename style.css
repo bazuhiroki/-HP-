@@ -46,16 +46,37 @@ body {
     transition: all 0.5s ease-in-out;
     position: relative;
     overflow: hidden;
+    /* 背景画像用の設定を追加 */
+    background-size: cover;
+    background-position: center;
 }
 
-/* アイテム内コンテンツ */
+/* --- 各カードの背景画像 --- */
+/* ここに使いたい画像のファイル名を指定します */
+.portfolio { background-image: url('images/portfolio.jpg'); }
+.sado { background-image: url('images/sado.jpg'); }
+.reading { background-image: url('images/reading.jpg'); }
+.manga { background-image: url('images/manga.jpg'); }
+.f1 { background-image: url('images/f1.jpg'); }
+.running { background-image: url('images/running.jpg'); }
+.baseball { background-image: url('images/baseball.jpg'); }
+.golf { background-image: url('images/golf.jpg'); }
+.movie { background-image: url('images/movie.jpg'); }
+.architecture { background-image: url('images/architecture.jpg'); }
+.travel { background-image: url('images/travel.jpg'); }
+
+
+/* アイテム内のコンテンツ (文字が読みやすいように背景色を追加) */
 .grid-item .content-main {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.4); /* 暗い背景を追加 */
     transition: opacity 0.3s ease-in-out;
 }
 .grid-item .content-detail {
@@ -67,10 +88,11 @@ body {
     opacity: 0;
     transition: opacity 0.3s ease-in-out 0.3s;
     overflow: auto;
+    background-color: rgba(255, 255, 255, 0.95); /* 詳細表示は明るい背景 */
 }
 .grid-item .content-detail h2 { margin-top: 0; }
 
-/* --- 全画面表示ボタン --- */
+/* 全画面表示ボタン */
 .fullscreen-button {
     position: absolute;
     bottom: 20px;
@@ -81,12 +103,12 @@ body {
     border-radius: 5px;
     padding: 8px 15px;
     cursor: pointer;
-    opacity: 0; /* 通常は見えない */
+    opacity: 0;
     transition: opacity 0.3s ease-in-out;
     z-index: 110;
 }
 
-/* --- フォーカス・モード --- */
+/* フォーカス・モードとオーバーレイのスタイルは前回と同じです */
 .grid-container.focus-active .grid-item {
     opacity: 0.3;
     transform: scale(0.9);
@@ -104,12 +126,9 @@ body {
 .grid-container.focus-active .grid-item.is-focused .content-detail {
     opacity: 1;
 }
-/* フォーカス時に全画面ボタンを表示 */
 .grid-container.focus-active .grid-item.is-focused .fullscreen-button {
     opacity: 1;
 }
-
-/* --- 全画面オーバーレイ --- */
 .fullscreen-overlay {
     position: fixed;
     top: 0;
