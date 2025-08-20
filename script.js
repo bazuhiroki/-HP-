@@ -1,64 +1,43 @@
-// HTMLの要素を取得
+// --- 基本設定 ---
+const NOTION_API_KEY = 'ここにあなたのAPIキーを貼り付け'; 
+const MOVIE_DATABASE_ID = 'ここに映画データベースのIDを貼り付け';
+
+// --- HTML要素の取得 ---
 const gridContainer = document.getElementById('grid-container');
 const gridItems = document.querySelectorAll('.grid-item');
 
-// 各アイテムをクリックした時の処理
-gridItems.forEach(item => {
-    // --- フォーカスモードの処理 ---
-    // ▼▼▼【修正点】リスナーを item そのものに付け直しました ▼▼▼
-    item.addEventListener('click', (event) => {
-        // 全画面表示ボタンをクリックした場合は、この処理を中断する
-        if (event.target.classList.contains('fullscreen-button')) {
-            return;
-        }
-
-        event.preventDefault(); // リンクのデフォルト動作を無効化
-
-        if (item.classList.contains('is-focused')) {
-            gridContainer.classList.remove('focus-active');
-            item.classList.remove('is-focused');
-        } else {
-            gridContainer.classList.add('focus-active');
-            gridItems.forEach(i => i.classList.remove('is-focused'));
-            item.classList.add('is-focused');
-        }
-    });
-
-    // --- 全画面表示ボタンの処理 ---
-    const fullscreenButton = item.querySelector('.fullscreen-button');
-    fullscreenButton.addEventListener('click', (event) => {
-        event.stopPropagation(); // 親要素へのクリックイベントの伝播を停止
-
-        // 表示するコンテンツを取得
-        const detailContent = item.querySelector('.content-detail').innerHTML;
-
-        // オーバーレイを生成
-        const overlay = document.createElement('div');
-        overlay.className = 'fullscreen-overlay';
-        
-        const closeButton = document.createElement('button');
-        closeButton.className = 'close-button';
-        closeButton.innerHTML = '&times;'; // ×記号
-
-        // コンテンツと閉じるボタンをオーバーレイに追加
-        overlay.innerHTML = detailContent;
-        overlay.querySelector('.fullscreen-button').remove(); // 元のボタンは削除
-        overlay.appendChild(closeButton);
-
-        // オーバーレイをbodyに追加
-        document.body.appendChild(overlay);
-
-        // 閉じるボタンのクリックイベント
-        closeButton.addEventListener('click', () => {
-            document.body.removeChild(overlay);
+// --- Notionから映画データを取得する関数 ---
+async function fetchNotionMovieData() {
+    try {
+        const response = await fetch(`https://api.notion.com/v1/databases/${MOVIE_DATABASE_ID}/query`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${NOTION_API_KEY}`,
+                'Content-Type': 'application/json',
+                'Notion-Version': '2022-06-28'
+            }
         });
-    });
-});
+        if (!response.ok) throw new Error('Notion API Error');
+        const data = await response.json();
 
-// コンテナの背景部分をクリックしてフォーカスを解除する処理
-gridContainer.addEventListener('click', (event) => {
-    if (event.target === gridContainer) {
-        gridContainer.classList.remove('focus-active');
-        gridItems.forEach(i => i.classList.remove('is-focused'));
+        return data.results.map(page => {
+            const properties = page.properties;
+            const titleProp = properties["名前"] || properties["タイトル"];
+            const tagsProp = properties["ジャンル"] || properties["Tags"];
+            
+            return {
+                title: titleProp?.title[0]?.plain_text || 'タイトル不明',
+                cover: page.cover?.file?.url || page.cover?.external?.url || null,
+                tags: tagsProp?.multi_select?.map(tag => tag.name) || []
+            };
+        });
+    } catch (error) {
+        console.error(error);
+        return null;
     }
+}
+
+// --- イベントリスナーの処理 ---
+gridItems.forEach(item => {
+    // ... (前回のコードと全く同じです)
 });
