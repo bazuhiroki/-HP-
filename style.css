@@ -4,22 +4,51 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: #f0f2f5;
     color: #1c1e21;
+    overflow: hidden;
 }
-.site-header { padding: 20px 5%; /* ...前回のコードと同じ... */ }
+.site-header {
+    padding: 20px 5%;
+}
+.site-header h1 {
+    font-size: 24px;
+    margin: 0;
+    font-weight: 600;
+}
 
-/* Gridコンテナ */
+/* --- 新設：ニュースバーのスタイル --- */
+.news-bar {
+    width: 90%;
+    margin: 0 auto 20px auto;
+    background-color: #fff;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+.news-label {
+    font-weight: 600;
+    margin-right: 15px;
+    color: #3d5a80; /* アクセントカラー */
+}
+.news-content {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Gridコンテナ (ニュースエリアがなくなったためシンプル化) */
 .grid-container {
     display: grid;
-    height: 80vh;
-    grid-template-columns: 1fr 1.5fr 1.5fr 1fr;
-    grid-template-rows: repeat(4, 1fr);
+    height: 70vh; /* 高さを調整 */
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr); /* 4列x3行=12マスに11アイテムを配置 */
     gap: 15px;
     padding: 0 5%;
-    /* フォーカス解除時のトランジション */
     transition: all 0.5s ease-in-out;
 }
 
-/* Gridアイテムの共通スタイル */
+/* Gridアイテムの共通スタイル (変更なし) */
 .grid-item {
     background-color: #fff;
     border-radius: 8px;
@@ -27,60 +56,49 @@ body {
     text-decoration: none;
     color: #333;
     cursor: pointer;
-    /* アニメーションの指定 */
     transition: all 0.5s ease-in-out;
-    position: relative; /* 詳細コンテンツの基準点 */
-    overflow: hidden; /* はみ出した詳細コンテンツを隠す */
+    position: relative;
+    overflow: hidden;
 }
 
-/* 通常時のアイテム内のコンテンツ */
+/* アイテム内のコンテンツスタイル (変更なし) */
 .grid-item .content-main {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
+    font-size: 16px;
     transition: opacity 0.3s ease-in-out;
 }
-
-/* フォーカス時に表示される詳細コンテンツ（普段は隠れている） */
 .grid-item .content-detail {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    padding: 20px;
+    padding: 30px;
     box-sizing: border-box;
     opacity: 0;
-    transition: opacity 0.3s ease-in-out 0.3s; /* 少し遅れて表示 */
+    transition: opacity 0.3s ease-in-out 0.3s;
 }
+.grid-item .content-detail h2 { margin-top: 0; }
 
-/* --- ここからが「フォーカス・モード」のスタイル --- */
 
-/* コンテナに .focus-active が付いた時のスタイル */
-.grid-container.focus-active {
-    /* 背景をクリックして戻れるようにgapを広げる */
-    gap: 30px; 
-}
-
-/* フォーカス時、フォーカスされていないアイテムのスタイル */
+/* --- 「フォーカス・モード」のスタイル --- */
 .grid-container.focus-active .grid-item {
     opacity: 0.3;
     transform: scale(0.9);
 }
-
-/* フォーカス時、フォーカスされたアイテムのスタイル */
 .grid-container.focus-active .grid-item.is-focused {
     opacity: 1;
     transform: scale(1);
-    /* 中央の大きなエリアに移動 */
-    grid-area: 1 / 2 / 5 / 4;
+    /* gridの全エリアを占有 */
+    grid-area: 1 / 1 / -1 / -1; 
+    z-index: 100;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
-
-/* フォーカスされたアイテム内のコンテンツのスタイル */
 .grid-container.focus-active .grid-item.is-focused .content-main {
-    opacity: 0; /* メインのタイトルは隠す */
+    opacity: 0;
 }
 .grid-container.focus-active .grid-item.is-focused .content-detail {
-    opacity: 1; /* 詳細コンテンツを表示 */
+    opacity: 1;
 }
