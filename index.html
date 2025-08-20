@@ -2,17 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>映画ビュー</title>
+    <title>カード一覧</title>
     <style>
+        /* 全カードの共通スタイル */
+        .card {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 10px;
+            cursor: pointer;
+            width: 300px;
+        }
+
         /* ポップアップのスタイル */
         .popup-container {
-            display: none; /* 初期状態では非表示 */
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7); /* 半透明の背景 */
+            background: rgba(0, 0, 0, 0.7);
             justify-content: center;
             align-items: center;
             z-index: 1000;
@@ -22,9 +31,10 @@
             background: #fff;
             padding: 20px;
             border-radius: 8px;
-            width: 90%; /* ポップアップの幅 */
-            height: 90%; /* ポップアップの高さ */
+            width: 90%;
+            height: 90%;
             position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .popup-close {
@@ -37,39 +47,35 @@
             background: none;
         }
         
-        .movie-card {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin: 10px;
-            cursor: pointer;
-        }
-
-        iframe {
+        iframe, .inner-content {
             width: 100%;
             height: 100%;
             border: none;
+            overflow: auto;
         }
     </style>
 </head>
 <body>
 
-    <div class="movie-card" onclick="showPopup('あなたのNotionの映画ページの公開URL')">
+    <h1>私のコレクション</h1>
+
+    <div class="card movie-card" data-card-type="movie" data-notion-url="あなたのNotion映画ページの公開URL">
         <h3>映画タイトル</h3>
-        <p>ここにあらすじや画像が表示されます。</p>
+        <p>「このカードはNotionページにリンクします。」</p>
     </div>
 
-    <div class="movie-card" onclick="showPopup('別のNotion映画ページの公開URL')">
-        <h3>別の映画タイトル</h3>
-        <p>ここにもあらすじや画像が表示されます。</p>
+    <div class="card other-card" data-card-type="other">
+        <h3>書籍タイトル</h3>
+        <p>「このカードは内部コンテンツを表示します。」</p>
     </div>
 
     <div id="popup-container" class="popup-container">
         <div class="popup-content">
             <button class="popup-close" onclick="closePopup()">×</button>
-            <div id="iframe-container">
+            <div id="popup-inner">
                 </div>
         </div>
     </div>
 
-</body>
+    </body>
 </html>
