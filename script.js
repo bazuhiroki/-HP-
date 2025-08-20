@@ -4,15 +4,11 @@ const gridItems = document.querySelectorAll('.grid-item');
 
 // 各アイテムをクリックした時の処理
 gridItems.forEach(item => {
-    // --- フォーカスモードの処理 ---
-    // ▼▼▼【修正点】リスナーを item そのものに付け直しました ▼▼▼
     item.addEventListener('click', (event) => {
-        // 全画面表示ボタンをクリックした場合は、この処理を中断する
         if (event.target.classList.contains('fullscreen-button')) {
             return;
         }
-
-        event.preventDefault(); // リンクのデフォルト動作を無効化
+        event.preventDefault();
 
         if (item.classList.contains('is-focused')) {
             gridContainer.classList.remove('focus-active');
@@ -21,41 +17,60 @@ gridItems.forEach(item => {
             gridContainer.classList.add('focus-active');
             gridItems.forEach(i => i.classList.remove('is-focused'));
             item.classList.add('is-focused');
+
+            // ▼▼▼ 映画カードがフォーカスされた際の特別処理 ▼▼▼
+            if (item.classList.contains('movie')) {
+                const detailView = item.querySelector('.content-detail');
+                const notionLink = item.dataset.notionLink;
+                
+                if (notionLink) {
+                    detailView.innerHTML = `
+                        <iframe class="notion-iframe" src="${notionLink}"></iframe>
+                        <button class="fullscreen-button">全画面で開く</button>
+                    `;
+                } else {
+                    detailView.innerHTML = `<p style="padding: 30px;">Notionリンクが設定されていません。</p>`;
+                }
+            }
         }
     });
 
-    // --- 全画面表示ボタンの処理 ---
-    const fullscreenButton = item.querySelector('.fullscreen-button');
-    fullscreenButton.addEventListener('click', (event) => {
-        event.stopPropagation(); // 親要素へのクリックイベントの伝播を停止
+    // 全画面表示ボタンの処理
+    item.addEventListener('click', function(event) {
+        if (event.target.classList.contains('fullscreen-button')) {
+            event.stopPropagation();
 
-        // 表示するコンテンツを取得
-        const detailContent = item.querySelector('.content-detail').innerHTML;
-
-        // オーバーレイを生成
-        const overlay = document.createElement('div');
-        overlay.className = 'fullscreen-overlay';
-        
-        const closeButton = document.createElement('button');
-        closeButton.className = 'close-button';
-        closeButton.innerHTML = '&times;'; // ×記号
-
-        // コンテンツと閉じるボタンをオーバーレイに追加
-        overlay.innerHTML = detailContent;
-        overlay.querySelector('.fullscreen-button').remove(); // 元のボタンは削除
-        overlay.appendChild(closeButton);
-
-        // オーバーレイをbodyに追加
-        document.body.appendChild(overlay);
-
-        // 閉じるボタンのクリックイベント
-        closeButton.addEventListener('click', () => {
-            document.body.removeChild(overlay);
-        });
+            // 映画カードの場合はリンクを新しいタブで開く
+            if (item.classList.contains('movie')) {
+                const notionLink = item.dataset.notionLink;
+                if (notionLink) {
+                    window.open(notionLink, '_blank');
+                }
+                return; // オーバーレイ処理は行わない
+            }
+            
+            // それ以外のカードはオーバーレイ表示
+            const detailContent = item.querySelector('.content-detail').innerHTML;
+            const overlay = document.createElement('div');
+            overlay.className = 'fullscreen-overlay';
+            const closeButton = document.createElement('button');
+            closeButton.className = 'close-button';
+            closeButton.innerHTML = '&times;';
+            overlay.innerHTML = detailContent;
+            const originalFsBtn = overlay.querySelector('.fullscreen-button');
+            if (originalFsBtn) {
+                originalFsBtn.remove();
+            }
+            overlay.appendChild(closeButton);
+            document.body.appendChild(overlay);
+            closeButton.addEventListener('click', () => {
+                document.body.removeChild(overlay);
+            });
+        }
     });
 });
 
-// コンテナの背景部分をクリックしてフォーカスを解除する処理
+// 背景クリックでフォーカス解除
 gridContainer.addEventListener('click', (event) => {
     if (event.target === gridContainer) {
         gridContainer.classList.remove('focus-active');
