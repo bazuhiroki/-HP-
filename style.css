@@ -1,63 +1,82 @@
-/* 基本設定 */
-body, html {
+/* 基本設定とフォント */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;700&family=Shippori+Mincho&display=swap');
+
+body {
     margin: 0;
-    padding: 0;
-    overflow: hidden; /* スクロールバーを非表示にする */
-    background-color: #f4f4f1; /* 落ち着いたオフホワイト */
+    font-family: 'Noto Sans JP', sans-serif;
+    background-color: #1a1a1a; /* 全体の背景はダークに */
+    color: #fff;
 }
 
-/* 窓（ビューポート） */
-#viewport {
-    width: 100vw;
-    height: 100vh;
-    cursor: grab; /* ドラッグできることを示すカーソル */
-}
-
-/* 無限キャンバス */
-#canvas {
-    position: relative;
-    transform-origin: 0 0; /* 拡大・縮小の基準点を左上隅に設定 */
-}
-
-/* オブジェクトの基本スタイル */
-.object {
-    position: absolute; /* キャンバス内の絶対位置に配置 */
+.site-header {
     padding: 20px;
-    background-color: rgba(255, 255, 255, 0.8);
-    border: 1px solid #ddd;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    backdrop-filter: blur(10px); /* すりガラス効果 */
-    font-family: serif;
-    color: #333;
-    transition: box-shadow 0.3s ease;
-}
-
-.object:hover {
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-}
-
-/* テキストオブジェクトのスタイル */
-.object-text h2 {
-    margin: 0 0 10px;
-    font-size: 20px;
-    color: #000;
-}
-
-/* 画像オブジェクトのスタイル */
-.object-image img {
-    width: 100%;
-    display: block;
-}
-.object-image h2 {
-    margin: 10px 0 0;
     text-align: center;
-    font-size: 16px;
+}
+
+.site-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* 各テーマセクションの共通設定 */
+.theme-section {
+    min-height: 100vh; /* 画面の高さいっぱいに広がる */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    box-sizing: border-box;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* パララックス（視差効果） */
+    position: relative;
+}
+
+/* テキストコンテンツのコンテナ */
+.content-wrapper {
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.5); /* テキストを読みやすくするための背景 */
+    padding: 30px;
+    border-radius: 5px;
+}
+
+.content-wrapper h2 {
+    font-size: 48px;
+    margin: 0 0 10px;
+}
+
+.content-wrapper p {
+    font-size: 18px;
+    margin: 0;
+}
+
+
+/* --- テーマ別のデザイン --- */
+
+/* 1. F1の疾走感 */
+.f1-theme {
+    /* F1マシンの画像（仮） */
+    background-image: url('https://images.unsplash.com/photo-1599421497992-92a4f1071a5c?q=80&w=1932');
+}
+
+.f1-theme h2 {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 700; /* 太字で力強く */
+    text-transform: uppercase; /* 大文字化 */
+    letter-spacing: 5px; /* 文字間隔を広げる */
+}
+
+/* 2. 読書の荘厳さ */
+.reading-theme {
+    /* 図書館の画像（仮） */
+    background-image: url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070');
+}
+
+.reading-theme h2 {
+    font-family: 'Shippori Mincho', serif; /* 明朝体で荘厳に */
     font-weight: normal;
 }
-
-/* 引用オブジェクトのスタイル */
-.object-quote {
-    font-style: italic;
-    font-size: 14px;
-    border-left: 3px solid #3d5a80; /* アクセントカラーの青 */
+.reading-theme p {
+    font-family: 'Shippori Mincho', serif;
 }
