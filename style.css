@@ -2,79 +2,85 @@
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #f0f2f5; /* 少しグレーがかった背景 */
+    background-color: #f0f2f5;
     color: #1c1e21;
 }
+.site-header { padding: 20px 5%; /* ...前回のコードと同じ... */ }
 
-/* ヘッダー */
-.site-header {
-    padding: 20px 5%;
-}
-
-.site-header h1 {
-    font-size: 24px;
-    margin: 0;
-    font-weight: 600;
-}
-
-/* --- CSS Gridによるレイアウト --- */
+/* Gridコンテナ */
 .grid-container {
     display: grid;
-    /* 縦横の比率を保つため、高さも指定 */
-    height: 80vh; 
-    /* 列の定義: [左] [中央左] [中央右] [右] */
+    height: 80vh;
     grid-template-columns: 1fr 1.5fr 1.5fr 1fr;
-    /* 行の定義: 4つの均等な行 */
     grid-template-rows: repeat(4, 1fr);
-    /* アイテム間の隙間 */
     gap: 15px;
     padding: 0 5%;
+    /* フォーカス解除時のトランジション */
+    transition: all 0.5s ease-in-out;
 }
 
-/* 各Gridアイテムの共通スタイル */
+/* Gridアイテムの共通スタイル */
 .grid-item {
     background-color: #fff;
-    border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    text-decoration: none;
+    color: #333;
+    cursor: pointer;
+    /* アニメーションの指定 */
+    transition: all 0.5s ease-in-out;
+    position: relative; /* 詳細コンテンツの基準点 */
+    overflow: hidden; /* はみ出した詳細コンテンツを隠す */
+}
+
+/* 通常時のアイテム内のコンテンツ */
+.grid-item .content-main {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 16px;
-    text-decoration: none;
-    color: #333;
-    transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.3s ease-in-out;
 }
 
-.grid-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+/* フォーカス時に表示される詳細コンテンツ（普段は隠れている） */
+.grid-item .content-detail {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out 0.3s; /* 少し遅れて表示 */
 }
 
-/* --- 各アイテムの配置指定 --- */
+/* --- ここからが「フォーカス・モード」のスタイル --- */
 
-/* 左列 */
-.portfolio   { grid-area: 1 / 1 / 2 / 2; }
-.sado        { grid-area: 2 / 1 / 3 / 2; }
-.reading     { grid-area: 3 / 1 / 4 / 2; }
-.manga       { grid-area: 4 / 1 / 5 / 2; }
-
-/* 右列 */
-.f1          { grid-area: 1 / 4 / 2 / 5; }
-.running     { grid-area: 2 / 4 / 3 / 5; }
-.baseball    { grid-area: 3 / 4 / 4 / 5; }
-.golf        { grid-area: 4 / 4 / 5 / 5; }
-
-/* 中央のニュースエリア (2列目から4列目の手前まで、1行目から4行目の手前までを占有) */
-.news        { 
-    grid-area: 1 / 2 / 4 / 4; 
-    font-size: 24px;
-    color: #888;
+/* コンテナに .focus-active が付いた時のスタイル */
+.grid-container.focus-active {
+    /* 背景をクリックして戻れるようにgapを広げる */
+    gap: 30px; 
 }
 
-/* 下段のアイテム */
-.movie       { grid-area: 4 / 2 / 5 / 3; }
-.architecture{ grid-area: 4 / 3 / 5 / 4; }
-/* travelは右下の空きスペースに入れました。不要であればこの行を削除してください。 */
-.travel      { grid-area: 4 / 4 / 5 / 5; } 
-/* もしゴルフとTravelを入れ替える場合、travelの行を消して、golfの行を grid-area: 4 / 4 / 5 / 5; に変更します */
+/* フォーカス時、フォーカスされていないアイテムのスタイル */
+.grid-container.focus-active .grid-item {
+    opacity: 0.3;
+    transform: scale(0.9);
+}
+
+/* フォーカス時、フォーカスされたアイテムのスタイル */
+.grid-container.focus-active .grid-item.is-focused {
+    opacity: 1;
+    transform: scale(1);
+    /* 中央の大きなエリアに移動 */
+    grid-area: 1 / 2 / 5 / 4;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* フォーカスされたアイテム内のコンテンツのスタイル */
+.grid-container.focus-active .grid-item.is-focused .content-main {
+    opacity: 0; /* メインのタイトルは隠す */
+}
+.grid-container.focus-active .grid-item.is-focused .content-detail {
+    opacity: 1; /* 詳細コンテンツを表示 */
+}
