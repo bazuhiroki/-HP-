@@ -1,7 +1,7 @@
 // --- 基本設定 ---
-const NOTION_API_KEY = 'ここにあなたのNotion APIキーを貼り付け';
-const MOVIE_DATABASE_ID = 'ここに映画データベースのIDを貼り付け';
-const TMDB_API_KEY = 'ここにあなたのTMDb APIキーを貼り付け';
+const NOTION_API_KEY = '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';
+const MOVIE_DATABASE_ID = '6acc1111f02f4977b5b782b2d4d64b71';
+const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
 
 // --- HTML要素の取得 ---
 const gridContainer = document.getElementById('grid-container');
