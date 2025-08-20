@@ -1,6 +1,6 @@
 // --- 基本設定 ---
-const NOTION_API_KEY = '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'; 
-const MOVIE_DATABASE_ID = 'f0cc111f02f45fbab2d2bf4b9db7d71';
+const NOTION_API_KEY = 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; 
+const MOVIE_DATABASE_ID = f0cc111f02f45fbab2d2bf4b9db7d71;
 
 // --- HTML要素の取得 ---
 const gridContainer = document.getElementById('grid-container');
