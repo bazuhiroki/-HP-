@@ -1,6 +1,6 @@
 // --- 基本設定 ---
 const NOTION_API_KEY = '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';
-const MOVIE_DATABASE_ID = 'cd0e050c25584bee9a5a0d0f4365a151?v';
+const MOVIE_DATABASE_ID = 'cd0e050c25584bee9a5a0d0f4365a151';
 const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
 
 // --- HTML要素の取得 ---
