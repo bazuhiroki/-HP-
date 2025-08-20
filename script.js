@@ -1,67 +1,60 @@
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // 全てのカード要素を取得
-        const allCards = document.querySelectorAll('.card');
+// HTMLの要素を取得
+const gridContainer = document.getElementById('grid-container');
+const gridItems = document.querySelectorAll('.grid-item');
 
-        allCards.forEach(card => {
-            card.addEventListener('click', (event) => {
-                const cardType = card.dataset.cardType;
+// 各アイテムをクリックした時の処理
+gridItems.forEach(item => {
+    // --- フォーカスモードの処理 ---
+    const contentMain = item.querySelector('.content-main');
+    contentMain.addEventListener('click', (event) => {
+        event.preventDefault();
 
-                if (cardType === 'movie') {
-                    const notionUrl = card.dataset.notionUrl;
-                    if (notionUrl) {
-                        showMoviePopup(notionUrl);
-                    }
-                } else if (cardType === 'other') {
-                    showOtherPopup();
-                }
-            });
-        });
+        if (item.classList.contains('is-focused')) {
+            gridContainer.classList.remove('focus-active');
+            item.classList.remove('is-focused');
+        } else {
+            gridContainer.classList.add('focus-active');
+            gridItems.forEach(i => i.classList.remove('is-focused'));
+            item.classList.add('is-focused');
+        }
     });
 
-    // 映画カード用のポップアップ表示関数
-    function showMoviePopup(notionUrl) {
-        const popupContainer = document.getElementById('popup-container');
-        const popupInner = document.getElementById('popup-inner');
+    // --- 全画面表示ボタンの処理 ---
+    const fullscreenButton = item.querySelector('.fullscreen-button');
+    fullscreenButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // 親要素へのクリックイベントの伝播を停止
+
+        // 表示するコンテンツを取得
+        const detailContent = item.querySelector('.content-detail').innerHTML;
+
+        // オーバーレイを生成
+        const overlay = document.createElement('div');
+        overlay.className = 'fullscreen-overlay';
         
-        // iframeを作成し、NotionのURLを設定
-        const iframe = document.createElement('iframe');
-        iframe.src = notionUrl;
+        const closeButton = document.createElement('button');
+        closeButton.className = 'close-button';
+        closeButton.innerHTML = '&times;'; // ×記号
 
-        // コンテナの中身をクリアして新しいiframeを挿入
-        popupInner.innerHTML = '';
-        popupInner.appendChild(iframe);
-        
-        // ポップアップを表示
-        popupContainer.style.display = 'flex';
+        // コンテンツと閉じるボタンをオーバーレイに追加
+        overlay.innerHTML = detailContent;
+        // ボタンはinnerHTMLで上書きされるので、再度追加
+        overlay.querySelector('.fullscreen-button').remove(); // 元のボタンは削除
+        overlay.appendChild(closeButton);
+
+        // オーバーレイをbodyに追加
+        document.body.appendChild(overlay);
+
+        // 閉じるボタンのクリックイベント
+        closeButton.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+        });
+    });
+});
+
+// コンテナの背景部分をクリックしてフォーカスを解除する処理
+gridContainer.addEventListener('click', (event) => {
+    if (event.target === gridContainer) {
+        gridContainer.classList.remove('focus-active');
+        gridItems.forEach(i => i.classList.remove('is-focused'));
     }
-
-    // その他のカード用のポップアップ表示関数
-    function showOtherPopup() {
-        const popupContainer = document.getElementById('popup-container');
-        const popupInner = document.getElementById('popup-inner');
-
-        // ポップアップに表示する内部コンテンツ
-        const content = `
-            <h2>書籍の詳細</h2>
-            <p>この書籍はとても面白いです。物語が深く、登場人物が魅力的です。</p>
-            <p>読書体験を共有しましょう。</p>
-        `;
-
-        // コンテナに内部コンテンツを挿入
-        popupInner.innerHTML = `<div class="inner-content">${content}</div>`;
-
-        // ポップアップを表示
-        popupContainer.style.display = 'flex';
-    }
-
-    // ポップアップを閉じる関数
-    function closePopup() {
-        const popupContainer = document.getElementById('popup-container');
-        popupContainer.style.display = 'none';
-        
-        // コンテンツをクリア
-        const popupInner = document.getElementById('popup-inner');
-        popupInner.innerHTML = '';
-    }
-</script>
+});
