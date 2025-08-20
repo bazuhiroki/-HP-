@@ -5,9 +5,14 @@ const gridItems = document.querySelectorAll('.grid-item');
 // 各アイテムをクリックした時の処理
 gridItems.forEach(item => {
     // --- フォーカスモードの処理 ---
-    const contentMain = item.querySelector('.content-main');
-    contentMain.addEventListener('click', (event) => {
-        event.preventDefault();
+    // ▼▼▼【修正点】リスナーを item そのものに付け直しました ▼▼▼
+    item.addEventListener('click', (event) => {
+        // 全画面表示ボタンをクリックした場合は、この処理を中断する
+        if (event.target.classList.contains('fullscreen-button')) {
+            return;
+        }
+
+        event.preventDefault(); // リンクのデフォルト動作を無効化
 
         if (item.classList.contains('is-focused')) {
             gridContainer.classList.remove('focus-active');
@@ -37,7 +42,6 @@ gridItems.forEach(item => {
 
         // コンテンツと閉じるボタンをオーバーレイに追加
         overlay.innerHTML = detailContent;
-        // ボタンはinnerHTMLで上書きされるので、再度追加
         overlay.querySelector('.fullscreen-button').remove(); // 元のボタンは削除
         overlay.appendChild(closeButton);
 
