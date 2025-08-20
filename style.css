@@ -1,13 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap');
+
 /* 基本設定 */
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: #f0f2f5;
     color: #1c1e21;
     overflow: hidden;
 }
 .site-header { padding: 20px 5%; }
-.site-header h1 { font-size: 24px; margin: 0; font-weight: 600; }
+.site-header h1 { font-size: 24px; margin: 0; font-weight: 700; }
 
 /* ニュースバー */
 .news-bar {
@@ -21,7 +23,7 @@ body {
     align-items: center;
     box-sizing: border-box;
 }
-.news-label { font-weight: 600; margin-right: 15px; color: #3d5a80; }
+.news-label { font-weight: 700; margin-right: 15px; color: #3d5a80; }
 .news-content { margin: 0; font-size: 14px; }
 
 /* Gridコンテナ */
@@ -46,17 +48,21 @@ body {
     transition: all 0.5s ease-in-out;
     position: relative;
     overflow: hidden;
+    opacity: 0;
+    animation: floatUp 0.6s ease-out forwards;
 }
-
-/* アイテム内コンテンツ */
+.grid-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12), 0 0 15px rgba(61, 90, 128, 0.3);
+}
 .grid-item .content-main {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
-    font-size: 16px;
-    transition: opacity 0.3s ease-in-out;
+    font-size: 18px;
+    font-weight: 700;
 }
 .grid-item .content-detail {
     position: absolute;
@@ -67,33 +73,26 @@ body {
     opacity: 0;
     transition: opacity 0.3s ease-in-out 0.3s;
     overflow: auto;
-    background-color: white;
+    pointer-events: none;
 }
 .grid-item .content-detail h2 { margin-top: 0; }
 
-/* Notion埋め込み用iframeのスタイル */
-.notion-iframe {
-    width: 100%;
-    /* ▼▼▼【修正点】高さを100%に戻します ▼▼▼ */
-    height: 100%;
-    border: none;
+/* 登場アニメーション */
+@keyframes floatUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-/* 全画面表示ボタン */
-.fullscreen-button {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    background-color: #3d5a80;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 15px;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-    z-index: 110;
-}
+.grid-item:nth-child(1)  { animation-delay: 0.1s; }
+.grid-item:nth-child(2)  { animation-delay: 0.15s; }
+.grid-item:nth-child(3)  { animation-delay: 0.2s; }
+.grid-item:nth-child(4)  { animation-delay: 0.25s; }
+.grid-item:nth-child(5)  { animation-delay: 0.3s; }
+.grid-item:nth-child(6)  { animation-delay: 0.35s; }
+.grid-item:nth-child(7)  { animation-delay: 0.4s; }
+.grid-item:nth-child(8)  { animation-delay: 0.45s; }
+.grid-item:nth-child(9)  { animation-delay: 0.5s; }
+.grid-item:nth-child(10) { animation-delay: 0.55s; }
+.grid-item:nth-child(11) { animation-delay: 0.6s; }
 
 /* フォーカス・モード */
 .grid-container.focus-active .grid-item { opacity: 0.3; transform: scale(0.9); }
@@ -105,35 +104,30 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 .grid-container.focus-active .grid-item.is-focused .content-main { opacity: 0; }
-.grid-container.focus-active .grid-item.is-focused .content-detail { opacity: 1; }
-/* 映画カードのフォーカス時はpaddingを0に */
-.grid-container.focus-active .grid-item.movie.is-focused .content-detail {
-    padding: 0;
-}
-.grid-container.focus-active .grid-item.is-focused .fullscreen-button { opacity: 1; }
+.grid-container.focus-active .grid-item.is-focused .content-detail { opacity: 1; pointer-events: auto; }
 
-/* 全画面オーバーレイ */
-.fullscreen-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #fff;
-    z-index: 200;
-    padding: 40px;
-    box-sizing: border-box;
-    overflow-y: auto;
-    animation: fadeIn 0.3s ease-in-out;
+/* 映画カード専用スタイル */
+.movie-focus-view {
+    width: 100%; height: 100%;
+    background-size: cover; background-position: center;
+    position: relative; color: white;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
 }
-.fullscreen-overlay .close-button {
-    position: fixed;
-    top: 20px;
-    right: 30px;
-    font-size: 30px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #333;
+.movie-focus-view::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6);
 }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.movie-focus-view > * { position: relative; z-index: 2; }
+.movie-title { font-size: 48px; font-weight: bold; margin: 0; }
+.watch-providers { margin-top: 30px; }
+.watch-providers h3 { font-weight: normal; font-size: 16px; margin-bottom: 15px; }
+.provider-list { display: flex; gap: 20px; }
+.provider-logo { width: 50px; height: 50px; border-radius: 10px; transition: transform 0.2s ease; }
+.provider-logo:hover { transform: scale(1.1); }
+.watched-button {
+    margin-top: 40px; padding: 12px 25px; font-size: 16px;
+    background-color: #3d5a80; color: white; border: none; border-radius: 8px;
+    cursor: pointer; transition: background-color 0.2s ease;
+}
+.watched-button:hover { background-color: #4a6c9b; }
+.watched-button.is-watched { background-color: #2a9d8f; cursor: default; }
