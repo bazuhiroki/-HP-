@@ -67,10 +67,18 @@ body {
     opacity: 0;
     transition: opacity 0.3s ease-in-out 0.3s;
     overflow: auto;
+    background-color: white;
 }
 .grid-item .content-detail h2 { margin-top: 0; }
 
-/* --- 全画面表示ボタン --- */
+/* ▼▼▼ Notion埋め込み用iframeのスタイルを追加 ▼▼▼ */
+.notion-iframe {
+    width: 100%;
+    height: calc(100% - 60px); /* ボタンの高さを考慮 */
+    border: none;
+}
+
+/* 全画面表示ボタン */
 .fullscreen-button {
     position: absolute;
     bottom: 20px;
@@ -81,16 +89,13 @@ body {
     border-radius: 5px;
     padding: 8px 15px;
     cursor: pointer;
-    opacity: 0; /* 通常は見えない */
+    opacity: 0;
     transition: opacity 0.3s ease-in-out;
     z-index: 110;
 }
 
-/* --- フォーカス・モード --- */
-.grid-container.focus-active .grid-item {
-    opacity: 0.3;
-    transform: scale(0.9);
-}
+/* フォーカス・モード */
+.grid-container.focus-active .grid-item { opacity: 0.3; transform: scale(0.9); }
 .grid-container.focus-active .grid-item.is-focused {
     opacity: 1;
     transform: scale(1);
@@ -98,18 +103,16 @@ body {
     z-index: 100;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
-.grid-container.focus-active .grid-item.is-focused .content-main {
-    opacity: 0;
-}
-.grid-container.focus-active .grid-item.is-focused .content-detail {
-    opacity: 1;
-}
-/* フォーカス時に全画面ボタンを表示 */
-.grid-container.focus-active .grid-item.is-focused .fullscreen-button {
-    opacity: 1;
+.grid-container.focus-active .grid-item.is-focused .content-main { opacity: 0; }
+.grid-container.focus-active .grid-item.is-focused .content-detail { opacity: 1; padding: 0; }
+.grid-container.focus-active .grid-item.is-focused .fullscreen-button { opacity: 1; }
+/* 映画カードのフォーカス時はpaddingを0に */
+.grid-container.focus-active .grid-item.movie.is-focused .content-detail {
+    padding: 0;
 }
 
-/* --- 全画面オーバーレイ --- */
+
+/* 全画面オーバーレイ */
 .fullscreen-overlay {
     position: fixed;
     top: 0;
@@ -133,7 +136,4 @@ body {
     cursor: pointer;
     color: #333;
 }
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
