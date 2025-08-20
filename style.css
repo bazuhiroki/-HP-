@@ -1,94 +1,63 @@
 /* 基本設定 */
-body {
-    font-family: sans-serif;
+body, html {
     margin: 0;
-    background-color: #f9f8f3; /* 参考サイトの背景色 */
-    color: #333;
-}
-
-a {
-    text-decoration: none;
-    color: inherit;
-}
-
-/* ヘッダー */
-.site-header {
-    padding: 20px;
-    background-color: #fff;
-    border-bottom: 1px solid #eee;
-}
-
-.site-header h1 {
-    font-size: 24px;
-    margin: 0;
-}
-
-.site-header nav ul {
-    margin: 20px 0 0;
     padding: 0;
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap; /* 折り返し設定 */
-    gap: 15px;
+    overflow: hidden; /* スクロールバーを非表示にする */
+    background-color: #f4f4f1; /* 落ち着いたオフホワイト */
 }
 
-/* メインコンテンツ */
-main {
+/* 窓（ビューポート） */
+#viewport {
+    width: 100vw;
+    height: 100vh;
+    cursor: grab; /* ドラッグできることを示すカーソル */
+}
+
+/* 無限キャンバス */
+#canvas {
+    position: relative;
+    transform-origin: 0 0; /* 拡大・縮小の基準点を左上隅に設定 */
+}
+
+/* オブジェクトの基本スタイル */
+.object {
+    position: absolute; /* キャンバス内の絶対位置に配置 */
     padding: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    backdrop-filter: blur(10px); /* すりガラス効果 */
+    font-family: serif;
+    color: #333;
+    transition: box-shadow 0.3s ease;
 }
 
-/* メイン画像 */
-.hero img {
+.object:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+/* テキストオブジェクトのスタイル */
+.object-text h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #000;
+}
+
+/* 画像オブジェクトのスタイル */
+.object-image img {
     width: 100%;
-    height: auto;
-    max-height: 400px; /* 高さを制限 */
-    object-fit: cover; /* 画像の比率を保ったままトリミング */
+    display: block;
 }
-
-/* ニュースセクション */
-.news {
-    margin-top: 40px;
-}
-
-.news h2 {
+.object-image h2 {
+    margin: 10px 0 0;
     text-align: center;
+    font-size: 16px;
     font-weight: normal;
 }
 
-.news-list article {
-    display: flex;
-    gap: 20px;
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
-}
-
-/* グリッドメニュー */
-.grid-menu {
-    margin-top: 40px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* レスポンシブ対応 */
-    gap: 20px;
-}
-
-.grid-item {
-    background-color: #fff;
-    border: 1px solid #eee;
-    height: 150px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 18px;
-    transition: opacity 0.3s; /* ホバーエフェクト */
-}
-
-.grid-item:hover {
-    opacity: 0.7;
-}
-
-/* フッター */
-.site-footer {
-    text-align: center;
-    padding: 40px 20px;
-    color: #888;
-    font-size: 12px;
+/* 引用オブジェクトのスタイル */
+.object-quote {
+    font-style: italic;
+    font-size: 14px;
+    border-left: 3px solid #3d5a80; /* アクセントカラーの青 */
 }
