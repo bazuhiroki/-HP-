@@ -7,14 +7,20 @@ gridItems.forEach(item => {
     item.addEventListener('click', (event) => {
         event.preventDefault(); // リンクのデフォルト動作を無効化
 
-        // クリックされたアイテムに 'is-focused' クラスを付ける
-        gridContainer.classList.add('focus-active');
-        
-        // 他のアイテムから 'is-focused' を外す
-        gridItems.forEach(i => i.classList.remove('is-focused'));
-        
-        // クリックされたアイテムにクラスを付ける
-        item.classList.add('is-focused');
+        // 既にフォーカスされているアイテムをクリックした場合は解除
+        if (item.classList.contains('is-focused')) {
+            gridContainer.classList.remove('focus-active');
+            item.classList.remove('is-focused');
+        } else {
+            // 新しいアイテムをクリックした場合
+            gridContainer.classList.add('focus-active');
+            
+            // 他のアイテムから 'is-focused' を外す
+            gridItems.forEach(i => i.classList.remove('is-focused'));
+            
+            // クリックされたアイテムにクラスを付ける
+            item.classList.add('is-focused');
+        }
     });
 });
 
