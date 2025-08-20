@@ -6,16 +6,10 @@ body {
     color: #1c1e21;
     overflow: hidden;
 }
-.site-header {
-    padding: 20px 5%;
-}
-.site-header h1 {
-    font-size: 24px;
-    margin: 0;
-    font-weight: 600;
-}
+.site-header { padding: 20px 5%; }
+.site-header h1 { font-size: 24px; margin: 0; font-weight: 600; }
 
-/* --- 新設：ニュースバーのスタイル --- */
+/* ニュースバー */
 .news-bar {
     width: 90%;
     margin: 0 auto 20px auto;
@@ -27,28 +21,21 @@ body {
     align-items: center;
     box-sizing: border-box;
 }
-.news-label {
-    font-weight: 600;
-    margin-right: 15px;
-    color: #3d5a80; /* アクセントカラー */
-}
-.news-content {
-    margin: 0;
-    font-size: 14px;
-}
+.news-label { font-weight: 600; margin-right: 15px; color: #3d5a80; }
+.news-content { margin: 0; font-size: 14px; }
 
-/* Gridコンテナ (ニュースエリアがなくなったためシンプル化) */
+/* Gridコンテナ */
 .grid-container {
     display: grid;
-    height: 70vh; /* 高さを調整 */
+    height: 70vh;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(3, 1fr); /* 4列x3行=12マスに11アイテムを配置 */
+    grid-template-rows: repeat(3, 1fr);
     gap: 15px;
     padding: 0 5%;
     transition: all 0.5s ease-in-out;
 }
 
-/* Gridアイテムの共通スタイル (変更なし) */
+/* Gridアイテム */
 .grid-item {
     background-color: #fff;
     border-radius: 8px;
@@ -61,7 +48,7 @@ body {
     overflow: hidden;
 }
 
-/* アイテム内のコンテンツスタイル (変更なし) */
+/* アイテム内コンテンツ */
 .grid-item .content-main {
     display: flex;
     justify-content: center;
@@ -79,11 +66,27 @@ body {
     box-sizing: border-box;
     opacity: 0;
     transition: opacity 0.3s ease-in-out 0.3s;
+    overflow: auto;
 }
 .grid-item .content-detail h2 { margin-top: 0; }
 
+/* --- 全画面表示ボタン --- */
+.fullscreen-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: #3d5a80;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    opacity: 0; /* 通常は見えない */
+    transition: opacity 0.3s ease-in-out;
+    z-index: 110;
+}
 
-/* --- 「フォーカス・モード」のスタイル --- */
+/* --- フォーカス・モード --- */
 .grid-container.focus-active .grid-item {
     opacity: 0.3;
     transform: scale(0.9);
@@ -91,7 +94,6 @@ body {
 .grid-container.focus-active .grid-item.is-focused {
     opacity: 1;
     transform: scale(1);
-    /* gridの全エリアを占有 */
     grid-area: 1 / 1 / -1 / -1; 
     z-index: 100;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -101,4 +103,37 @@ body {
 }
 .grid-container.focus-active .grid-item.is-focused .content-detail {
     opacity: 1;
+}
+/* フォーカス時に全画面ボタンを表示 */
+.grid-container.focus-active .grid-item.is-focused .fullscreen-button {
+    opacity: 1;
+}
+
+/* --- 全画面オーバーレイ --- */
+.fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    z-index: 200;
+    padding: 40px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease-in-out;
+}
+.fullscreen-overlay .close-button {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    font-size: 30px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #333;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
