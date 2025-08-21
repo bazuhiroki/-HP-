@@ -57,8 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pageId: page.id,
                 title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
                 url: page.properties['URL 1']?.url || null,
-                // ▼▼▼【修正済みの箇所】▼▼▼
-                isWatched: page.properties["視聴済"]?.checkbox === true
+                isWatched: page.properties["視聴済"]?.checkbox === true //「視聴済」に修正済み
             }));
         } catch (error) { console.error("Notionデータ取得エラー:", error); return []; }
     }
@@ -80,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return allProviders.filter(p => ALLOWED_PROVIDERS.includes(p.provider_name));
         } catch (error) { console.error(`TMDb情報取得エラー (${title}):`, error); return []; }
     }
-    
+
     async function updateNotionPageAsWatched(pageId) {
         const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
         const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
@@ -88,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(apiUrl, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${NOTION_API_KEY}`, 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28' },
-                body: JSON.stringify({ properties: { "視聴済": { checkbox: true } } })
+                body: JSON.stringify({ properties: { "視聴済": { checkbox: true } } }) //「視聴済」に修正済み
             });
             return response.ok;
         } catch (error) { console.error("Notion更新エラー:", error); return false; }
@@ -172,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${provider.movies.map(movie => `
                                 <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-title="${movie.title}">
                                     <p class="movie-card-title">${movie.title}</p>
-                                    ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済</span>' : ''}
+                                    ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済み</span>' : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -227,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         thinkingWrapper.className = 'chat-bubble-wrapper ai';
         thinkingWrapper.innerHTML = `<div class="chat-bubble chat-bubble-ai">...</div>`;
         document.getElementById('chat-box').appendChild(thinkingWrapper);
-        
+
         const mentionedMovie = allMoviesData.find(m => userInput.includes(m.title));
         if (mentionedMovie) {
             currentMovieContext = mentionedMovie;
@@ -292,7 +291,7 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
 2. **おすすめの提案:** ユーザーが「おすすめは？」と尋ねてきた場合、リストの中から**「未視聴」の映画**を1つだけ選び、推薦してください。**絶対に視聴済みの映画をおすすめしないでください。**「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
 3. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
 `;
-        
+
         chatHistory = [
             { role: "user", parts: [{ text: initialSystemPrompt }] },
             { role: "model", parts: [{ text: "承知いたしました。映画コンシェルジュとして、ご案内します。" }] }
@@ -339,23 +338,34 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
 
     gridItems.forEach(item => {
         item.addEventListener('click', (e) => {
+            // 詳細コンテンツ内のクリックは無視する（意図しない非表示を防ぐため）
             if (e.target.closest('.content-detail')) {
                 return;
             }
 
-            const isFocused = item.classList.contains('is-focused');
-            
+            // クリックされたアイテムが、すでにフォーカスされていたかどうかを事前に記憶しておく
+            const isAlreadyFocused = item.classList.contains('is-focused');
+
+            // いったん、すべてのアイテムからフォーカスを解除する
             gridItems.forEach(i => i.classList.remove('is-focused', 'is-fullscreen'));
             gridContainer.classList.remove('focus-active');
 
-            if (!isFocused) {
+            // もし、クリックしたアイテムが元々フォーカスされていなかった場合（＝開く操作）
+            if (!isAlreadyFocused) {
+                // クリックされたアイテムにだけ、改めてフォーカスを当てる
                 item.classList.add('is-focused');
                 gridContainer.classList.add('focus-active');
 
+                // 映画アプリの初期化（必要であれば）
                 if (item.classList.contains('movie')) {
                     initializeMovieApp(item.querySelector('.content-detail'));
                 }
             } else {
+                // もし、元々フォーカスされていた場合（＝閉じる操作）
+                // すでにフォーカスは解除されているので、ここでは何もしない。
+                // これにより、グリッドが元の状態に戻る。
+
+                // 映画アプリのコンテンツをクリアする（必要であれば）
                 if (item.classList.contains('movie')) {
                     isMovieAppInitialized = false;
                     item.querySelector('.content-detail').innerHTML = '';
