@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
                 url: page.properties['URL 1']?.url || null,
                 // ▼▼▼【修正済みの箇所】▼▼▼
-                isWatched: page.properties["視聴済み"]?.checkbox === true
+                isWatched: page.properties["視聴済"]?.checkbox === true
             }));
         } catch (error) { console.error("Notionデータ取得エラー:", error); return []; }
     }
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(apiUrl, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${NOTION_API_KEY}`, 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28' },
-                body: JSON.stringify({ properties: { "視聴済み": { checkbox: true } } })
+                body: JSON.stringify({ properties: { "視聴済": { checkbox: true } } })
             });
             return response.ok;
         } catch (error) { console.error("Notion更新エラー:", error); return false; }
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${provider.movies.map(movie => `
                                 <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-title="${movie.title}">
                                     <p class="movie-card-title">${movie.title}</p>
-                                    ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済み</span>' : ''}
+                                    ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済</span>' : ''}
                                 </div>
                             `).join('')}
                         </div>
