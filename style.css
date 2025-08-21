@@ -107,6 +107,8 @@ body {
 .grid-item:nth-child(9)  { animation-delay: 0.5s; }
 .grid-item:nth-child(10) { animation-delay: 0.55s; }
 .grid-item:nth-child(11) { animation-delay: 0.6s; }
+.grid-item:nth-child(12) { animation-delay: 0.65s; }
+
 
 /* フォーカス・モード */
 .grid-container.focus-active .grid-item { opacity: 0.3; transform: scale(0.9); }
@@ -376,13 +378,15 @@ body {
 
     /* 映画アプリのレイアウトを縦積みに変更 */
     .movie-app-container {
-        grid-template-rows: auto 1fr; /* 映画リストは自動、チャットは残り全部 */
+        /* ▼▼▼【修正点】高さをバランス良く分割 ▼▼▼ */
+        grid-template-rows: 45% 55%; 
         grid-template-columns: 1fr;
         gap: 15px;
     }
 
     #movie-container {
-        max-height: 40vh; /* 映画リストの最大高さを設定 */
+        /* ▼▼▼【修正点】max-heightは不要になるため削除 ▼▼▼ */
+        /* max-height: 40vh; */
     }
 
     /* 映画カードの最小幅を調整 */
@@ -406,6 +410,7 @@ body {
         max-width: 90%; /* チャットの吹き出し幅を調整 */
     }
 }
+
 
 
 
