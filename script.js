@@ -7,9 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     // Gemini APIキーをここに設定してください。
     // ※注意: 本来はサーバーサイドで管理すべきキーです。
-    const GEMINI_API_KEY = 'AIzaSyDUfeARP0PATgGlG17Grqit29-U0ya5vhQ'; 
+    const GEMINI_API_KEY = ''; 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-    const CORS_PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
+    
+    // ★★★ 修正点：証明書が有効な別のプロキシサーバーに変更しました ★★★
+    const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
     // --- グローバル変数 ---
     let allMoviesData = [];
@@ -23,7 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- API通信用の関数 ---
 
     async function fetchNotionMovies() {
-        const apiUrl = `${CORS_PROXY_URL}https://api.notion.com/v1/databases/${MOVIE_DATABASE_ID}/query`;
+        // ★★★ 修正点：プロキシのURLと結合する方法を修正 ★★★
+        const targetUrl = `https://api.notion.com/v1/databases/${MOVIE_DATABASE_ID}/query`;
+        const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -43,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function getWatchProvidersForMovie(title) {
         if (!title || title === 'タイトル不明') return [];
         try {
+            // TMDBはプロキシ不要な場合が多い
             const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}&language=ja-JP`;
             const searchRes = await fetch(searchUrl);
             if (!searchRes.ok) return [];
@@ -58,7 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     async function updateNotionPageAsWatched(pageId) {
-        const apiUrl = `${CORS_PROXY_URL}https://api.notion.com/v1/pages/${pageId}`;
+        // ★★★ 修正点：プロキシのURLと結合する方法を修正 ★★★
+        const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
+        const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
         try {
             const response = await fetch(apiUrl, {
                 method: 'PATCH',
