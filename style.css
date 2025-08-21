@@ -8,8 +8,14 @@ body {
     color: #1c1e21;
     overflow: hidden;
 }
-.site-header { padding: 20px 5%; }
-.site-header h1 { font-size: 24px; margin: 0; font-weight: 700; }
+.site-header { 
+    padding: 20px 5%; 
+}
+.site-header h1 { 
+    font-size: 24px; 
+    margin: 0; 
+    font-weight: 700; 
+}
 
 /* ニュースバー */
 .news-bar {
@@ -23,8 +29,15 @@ body {
     align-items: center;
     box-sizing: border-box;
 }
-.news-label { font-weight: 700; margin-right: 15px; color: #3d5a80; }
-.news-content { margin: 0; font-size: 14px; }
+.news-label { 
+    font-weight: 700; 
+    margin-right: 15px; 
+    color: #3d5a80; 
+}
+.news-content { 
+    margin: 0; 
+    font-size: 14px; 
+}
 
 /* Gridコンテナ */
 .grid-container {
@@ -325,6 +338,76 @@ body {
 .ai-link:hover {
     text-decoration: underline;
 }
+
+/* ▼▼▼ ここからスマートフォン対応用のCSS ▼▼▼ */
+@media (max-width: 768px) {
+    body {
+        overflow: auto; /* スマホではスクロールを許可 */
+    }
+
+    .site-header h1 {
+        font-size: 20px; /* ヘッダーの文字を少し小さく */
+    }
+
+    .news-bar {
+        flex-direction: column; /* ニュースバーを縦積みに */
+        align-items: flex-start;
+        padding: 10px 15px;
+    }
+
+    /* グリッドのレイアウトを縦2列に変更 */
+    .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(6, 1fr); /* 行数を調整 */
+        height: auto; /* 高さを自動調整 */
+        padding: 0 15px; /* 横の余白を調整 */
+    }
+
+    /* フォーカスされたアイテムは画面全体に広がるように調整 */
+    .grid-container.focus-active .grid-item.is-focused {
+        min-width: unset; /* 最小幅の指定を解除 */
+        min-height: unset;
+        resize: none; /* リサイズを無効化 */
+    }
+
+    .grid-item .content-detail {
+        padding: 20px; /* 詳細表示の余白を調整 */
+    }
+
+    /* 映画アプリのレイアウトを縦積みに変更 */
+    .movie-app-container {
+        grid-template-rows: auto 1fr; /* 映画リストは自動、チャットは残り全部 */
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    #movie-container {
+        max-height: 40vh; /* 映画リストの最大高さを設定 */
+    }
+
+    /* 映画カードの最小幅を調整 */
+    .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+
+/* ▼▼▼ 画面がさらに小さいスマートフォン向けの調整 ▼▼▼ */
+@media (max-width: 480px) {
+    .grid-container {
+        grid-template-columns: 1fr; /* グリッドを縦1列に */
+        grid-template-rows: repeat(12, 20vh); /* 各アイテムの高さを調整 */
+    }
+    
+    .grid-item .content-main {
+        font-size: 16px; /* 文字サイズを調整 */
+    }
+
+    .chat-bubble {
+        max-width: 90%; /* チャットの吹き出し幅を調整 */
+    }
+}
+
+
 
 
 
