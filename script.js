@@ -213,9 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const movieContainer = document.getElementById('movie-container');
         const fullscreenButton = container.querySelector('.fullscreen-toggle-button');
 
-        // ★★★ 改善点1: 全画面表示ボタンのイベントリスナーを修正 ★★★
         fullscreenButton.addEventListener('click', (e) => {
-            e.stopPropagation(); // 親要素へのクリックイベントの伝播を停止
+            e.stopPropagation();
             container.parentElement.classList.toggle('is-fullscreen');
         });
 
@@ -233,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ★★★ 改善点2: AIへの指示（プロンプト）を大幅に改善 ★★★
+        // ★★★ 改善点: AIへの指示（プロンプト）をeiga.com対応に更新 ★★★
         const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
@@ -244,10 +243,13 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
 
 # あなたの行動ルール
 1. **映画の特定と確認:** ユーザーの発言がリスト内の特定の映画タイトルに言及している場合、その映画を1-2文で簡潔に紹介し、「この映画について、もっと詳しく知りたいですか？それとも視聴しますか？」と尋ねてください。
-2. **視聴の意思表示への対応:** ユーザーが「見る」「視聴する」と答えた場合、**会話の文脈からどの映画について話しているかを判断**してください。そして、その映画の正しい情報を使って、以下の2つを**必ず**提示してください。
-    - 視聴ページのリンク: '<a href="[該当映画の正しいURL]" target="_blank" class="ai-link">視聴ページへ</a>'
-    - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
-    - もしURLが「なし」の場合は、「申し訳ありません、この映画の視聴URLは登録されていません。」と伝えてください。
+2. **視聴の意思表示への対応:** ユーザーが「見る」「視聴する」「みたい」と答えた場合、**会話の文脈からどの映画について話しているかを判断**してください。そして、その映画の正しい情報を使って、以下の対応をしてください。
+    - **もしURLが登録されている場合:** 以下の2つを提示してください。
+        - 視聴ページのリンク: '<a href="[該当映画の正しいURL]" target="_blank" class="ai-link">視聴ページへ</a>'
+        - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
+    - **もしURLが「なし」の場合:** 「申し訳ありません、この映画の視聴URLは登録されていませんでした。代わりに映画.comで探せるリンクをご用意しました。」と伝えた上で、以下の2つを提示してください。
+        - eiga.comの検索リンク: '<a href="https://eiga.com/search/${encodeURIComponent('[該当映画の正しいタイトル]')}" target="_blank" class="ai-link">映画.comで「[該当映画の正しいタイトル]」を探す</a>'
+        - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
 3. **おすすめの提案:** ユーザーが「おすすめは？」と尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、推薦してください。「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
 4. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
 `;
@@ -311,6 +313,7 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
     });
 });
+
 
 
 
