@@ -8,6 +8,12 @@ const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
 const gridContainer = document.getElementById('grid-container');
 const gridItems = document.querySelectorAll('.grid-item');
 
+// --- CORSエラー対策用のプロキシURL ---
+// ブラウザから直接APIを叩くとセキュリティでブロックされるため、仲介サーバーを経由させます。
+// 注意：この公開プロキシは開発・テスト用です。本番環境では使用しないでください。
+const CORS_PROXY_URL = 'https://proxy.cors.sh/';
+
+
 // --- API通信用の関数 ---
 
 /**
@@ -15,7 +21,10 @@ const gridItems = document.querySelectorAll('.grid-item');
  */
 async function fetchNotionMovies() {
     try {
-        const response = await fetch(`https://api.notion.com/v1/databases/${MOVIE_DATABASE_ID}/query`, {
+        // ★★★ 修正点：プロキシURLを経由してAPIにリクエストします ★★★
+        const apiUrl = `${CORS_PROXY_URL}https://api.notion.com/v1/databases/${MOVIE_DATABASE_ID}/query`;
+        
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${NOTION_API_KEY}`,
@@ -26,37 +35,26 @@ async function fetchNotionMovies() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            // APIからのエラーメッセージをコンソールに表示
             console.error('Notion API Error:', errorData);
             throw new Error(`Notion API Error: ${errorData.message}`);
         }
 
         const data = await response.json();
 
-        // 取得した各ページ（映画）の情報を整形する
         return data.results.map(page => {
             const properties = page.properties;
-
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-            // 修正点：プロパティ名 '名前' を直接指定してタイトル情報を取得します。
-            // これが最も確実でシンプルな方法です。
-            // 以前のコードはプロパティの「種類(type)」と「名前」を混同していました。
             const titleProperty = properties['名前'];
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
             return {
                 pageId: page.id,
-                // titlePropertyが存在し、その中にtitle配列があればテキストを取得
                 title: titleProperty?.title[0]?.plain_text || 'タイトル不明',
-                // ページのカバー画像URLを取得
                 cover: page.cover?.file?.url || page.cover?.external?.url || null,
-                // '視聴済み' チェックボックスの状態を取得
                 isWatched: properties["視聴済み"]?.checkbox || false
             };
         });
     } catch (error) {
         console.error("Notionの映画データ取得中にエラーが発生しました:", error);
-        return []; // エラーが発生した場合は空の配列を返す
+        return [];
     }
 }
 
@@ -68,6 +66,7 @@ async function fetchNotionMovies() {
 async function searchTmdbMovie(title) {
     if (!title || title === 'タイトル不明') return null;
     try {
+        // TMDb APIはCORSを許可している場合が多いため、プロキシは不要なことが多いです。
         const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}&language=ja-JP`);
         if (!response.ok) throw new Error('TMDb Search Error');
         const data = await response.json();
@@ -88,7 +87,6 @@ async function getTmdbWatchProviders(movieId) {
         const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=${TMDB_API_KEY}`);
         if (!response.ok) throw new Error('TMDb Providers Error');
         const data = await response.json();
-        // 日本の定額配信サービス(flatrate)を返す
         return data.results?.JP?.flatrate || [];
     } catch (error) {
         console.error("TMDbでの配信サービス情報取得中にエラーが発生しました:", error);
@@ -102,7 +100,10 @@ async function getTmdbWatchProviders(movieId) {
  */
 async function updateNotionPageAsWatched(pageId) {
     try {
-        const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+        // ★★★ 修正点：こちらもプロキシURLを経由させます ★★★
+        const apiUrl = `${CORS_PROXY_URL}https://api.notion.com/v1/pages/${pageId}`;
+
+        const response = await fetch(apiUrl, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${NOTION_API_KEY}`,
@@ -138,11 +139,10 @@ async function displayMovieDetails(item) {
     const notionMovies = await fetchNotionMovies();
 
     if (notionMovies.length === 0) {
-        detailView.innerHTML = '<p style="padding: 20px; color: #888;">Notionに映画データがありません。インテグレーションの招待などを確認してください。</p>';
+        detailView.innerHTML = '<p style="padding: 20px; color: #888;">Notionに映画データがないか、APIリクエストに失敗しました。コンソールを確認してください。</p>';
         return;
     }
 
-    // 全ての映画情報を並行して取得
     const moviePromises = notionMovies.map(async (movie) => {
         const tmdbId = await searchTmdbMovie(movie.title);
         const providers = tmdbId ? await getTmdbWatchProviders(tmdbId) : [];
@@ -171,11 +171,9 @@ async function displayMovieDetails(item) {
         `;
     });
 
-    // 全てのHTMLが生成されたら結合して表示
     const moviesHtml = (await Promise.all(moviePromises)).join('');
     detailView.innerHTML = moviesHtml;
 
-    // 「視聴済みにする」ボタンにイベントリスナーを設定
     detailView.querySelectorAll('.watched-button').forEach(button => {
         button.addEventListener('click', async () => {
             const pageId = button.dataset.pageId;
@@ -186,7 +184,7 @@ async function displayMovieDetails(item) {
                 button.textContent = '✅ 視聴済みにしました';
             } else {
                 button.textContent = 'エラーが発生しました';
-                button.disabled = false; // エラー時は再度押せるようにする
+                button.disabled = false;
             }
         });
     });
@@ -195,10 +193,8 @@ async function displayMovieDetails(item) {
 
 // --- 初期化処理 ---
 
-// 各グリッドアイテムにクリックイベントを設定
 gridItems.forEach(item => {
     item.addEventListener('click', async (event) => {
-        // ボタンクリックの場合は何もしない
         if (event.target.closest('.watched-button') || event.target.closest('.fullscreen-button')) {
             return;
         }
@@ -206,23 +202,19 @@ gridItems.forEach(item => {
 
         const isFocused = item.classList.contains('is-focused');
 
-        // 全てのアイテムからフォーカスを外す
         gridContainer.classList.remove('focus-active');
         gridItems.forEach(i => i.classList.remove('is-focused'));
 
-        // クリックしたアイテムがフォーカスされていなかった場合、フォーカスを当てる
         if (!isFocused) {
             gridContainer.classList.add('focus-active');
             item.classList.add('is-focused');
 
-            // 映画アイテムであれば詳細情報を表示
             if (item.classList.contains('movie')) {
                 displayMovieDetails(item);
             }
         }
     });
 
-    // 全画面表示ボタンの処理
     const fullscreenButton = item.querySelector('.fullscreen-button');
     if (fullscreenButton) {
         fullscreenButton.addEventListener('click', (event) => {
@@ -244,11 +236,11 @@ gridItems.forEach(item => {
     }
 });
 
-// 背景クリックでフォーカス解除
 gridContainer.addEventListener('click', (event) => {
     if (event.target === gridContainer) {
         gridContainer.classList.remove('focus-active');
         gridItems.forEach(i => i.classList.remove('is-focused'));
     }
 });
+
 
