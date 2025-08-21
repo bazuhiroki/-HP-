@@ -23,7 +23,7 @@ async function fetchNotionMovies() {
         
         return data.results.map(page => {
             const properties = page.properties;
-            const titlePropertyKey = Object.keys(properties).find(key => properties[key].type === 'title');
+            const titlePropertyKey = Object.keys(properties).find(key => properties[key].type === '名前');
             const titleProperty = properties[titlePropertyKey];
 
             return {
