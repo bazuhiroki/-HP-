@@ -20,6 +20,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const gridContainer = document.getElementById('grid-container');
     const gridItems = document.querySelectorAll('.grid-item');
 
+    // --- ヘルパー関数 ---
+    function copyToClipboard(text, button) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            if (button) {
+                button.textContent = '✅ コピー完了';
+                setTimeout(() => {
+                    if (button.classList.contains('copy-title-button')) {
+                         button.textContent = '📋';
+                    } else {
+                         button.textContent = 'タイトルをコピー';
+                    }
+                }, 1500);
+            }
+        } catch (err) {
+            console.error('テキストのコピーに失敗しました: ', err);
+        }
+        document.body.removeChild(textArea);
+    }
+
     // --- API通信用の関数 ---
 
     async function fetchNotionMovies() {
@@ -149,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="movie-grid">
                             ${provider.movies.map(movie => `
                                 <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-title="${movie.title}">
+                                    <button class="copy-title-button" data-title="${movie.title}" title="タイトルをコピー">📋</button>
                                     <p class="movie-card-title">${movie.title}</p>
                                     ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済み</span>' : ''}
                                 </div>
@@ -225,6 +250,13 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMovieLists(allMoviesData);
 
         movieContainer.addEventListener('click', (e) => {
+            const copyButton = e.target.closest('.copy-title-button');
+            if (copyButton) {
+                e.stopPropagation();
+                copyToClipboard(copyButton.dataset.title, copyButton);
+                return;
+            }
+
             const card = e.target.closest('.movie-card');
             if (card) {
                 chatInput.value = card.dataset.title;
@@ -232,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ★★★ 改善点: AIへの指示（プロンプト）をeiga.com対応に更新 ★★★
+        // ★★★ 改善点: AIへの指示（プロンプト）をコピーボタン対応に更新 ★★★
         const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
@@ -247,8 +279,9 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
     - **もしURLが登録されている場合:** 以下の2つを提示してください。
         - 視聴ページのリンク: '<a href="[該当映画の正しいURL]" target="_blank" class="ai-link">視聴ページへ</a>'
         - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
-    - **もしURLが「なし」の場合:** 「申し訳ありません、この映画の視聴URLは登録されていませんでした。代わりに映画.comで探せるリンクをご用意しました。」と伝えた上で、以下の2つを提示してください。
-        - eiga.comの検索リンク: '<a href="https://eiga.com/search/${encodeURIComponent('[該当映画の正しいタイトル]')}" target="_blank" class="ai-link">映画.comで「[該当映画の正しいタイトル]」を探す</a>'
+    - **もしURLが「なし」の場合:** 「申し訳ありません、この映画の視聴URLは登録されていませんでした。代わりにFilmarksでレビューや情報を探せるリンクをご用意しました。」と伝えた上で、以下の3つを提示してください。
+        - タイトルコピーボタン: '<button class="ai-button copy-ai-title" data-title="[該当映画の正しいタイトル]">タイトルをコピー</button>'
+        - Filmarksの検索リンク: '<a href="https://filmarks.com/search/movies?q=${encodeURIComponent('[該当映画の正しいタイトル]')}" target="_blank" class="ai-link">Filmarksで探す</a>'
         - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
 3. **おすすめの提案:** ユーザーが「おすすめは？」と尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、推薦してください。「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
 4. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
@@ -269,6 +302,12 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
 
         chatBox.addEventListener('click', async (e) => {
+            // ★★★ 改善点: AIが生成したコピーボタンの処理を追加 ★★★
+            if (e.target.matches('.copy-ai-title')) {
+                copyToClipboard(e.target.dataset.title, e.target);
+                return;
+            }
+
             if (e.target.matches('.ai-button')) {
                 const button = e.target;
                 const pageId = button.dataset.pageId;
@@ -313,6 +352,7 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
     });
 });
+
 
 
 
