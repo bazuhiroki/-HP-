@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     // Gemini APIキーをここに設定してください。
     // ※注意: 本来はサーバーサイドで管理すべきキーです。
-    const GEMINI_API_KEY = ''; 
+    const GEMINI_API_KEY = 'AIzaSyDUfeARP0PATgGlG17Grqit29-U0ya5vhQ'; 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     
     // ★★★ 修正点：証明書が有効な別のプロキシサーバーに変更しました ★★★
