@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA'; 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
-
     const ALLOWED_PROVIDERS = ['Netflix', 'Hulu', 'Amazon Prime Video'];
 
     // --- グローバル変数 ---
@@ -75,13 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function callGeminiAPI(prompt) {
         if (!GEMINI_API_KEY) return "エラー: Gemini APIキーが設定されていません。";
-        
-        // ★★★ 修正点: AIモデル名を最新のものに変更しました ★★★
         const modelName = 'gemini-1.5-flash-latest';
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
-        
         chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-        
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -108,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderMovieAppStructure(container) {
         container.innerHTML = `
+            <button class="fullscreen-toggle-button" title="全画面表示切り替え">⛶</button>
             <div class="movie-app-container">
                 <div id="movie-container">
                     <p>Notionから映画情報を取得中...</p>
@@ -138,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
-
         let html = '';
         if (Object.keys(groupedByProvider).length === 0) {
             html = '<p>指定されたサービスで視聴可能な映画は見つかりませんでした。</p>';
@@ -193,7 +188,18 @@ document.addEventListener('DOMContentLoaded', () => {
         thinkingWrapper.innerHTML = `<div class="chat-bubble chat-bubble-ai">...</div>`;
         document.getElementById('chat-box').appendChild(thinkingWrapper);
         
-        const prompt = userInput;
+        const movie = allMoviesData.find(m => userInput.includes(m.title));
+        let prompt;
+
+        if (userInput.includes("見る") || userInput.includes("視聴")) {
+             prompt = `ユーザーが映画の視聴を希望しています。会話の文脈から、どの映画について話しているか判断してください。もし特定の映画について話していると判断した場合、その映画のURLと視聴済みボタンを提示してください。
+- 該当映画の情報: ${movie ? `{title: "${movie.title}", url: "${movie.url}", pageId: "${movie.pageId}"}` : "不明"}
+- URLの形式: '<a href="[ここにURL]" target="_blank" class="ai-link">視聴ページへ</a>'
+- ボタンの形式: '<button class="ai-button" data-page-id="[ここにPageID]">視聴済みにする</button>'
+もしどの映画か特定できなければ、「どの映画を視聴しますか？」と聞き返してください。`;
+        } else {
+            prompt = userInput;
+        }
 
         const aiResponse = await callGeminiAPI(prompt);
         thinkingWrapper.remove();
@@ -208,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderMovieAppStructure(container);
 
-        container.querySelector('.movie-app-container').addEventListener('click', (e) => {
+        container.addEventListener('click', (e) => {
             e.stopPropagation();
         });
 
@@ -216,6 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendButton = document.getElementById('send-button');
         const chatBox = document.getElementById('chat-box');
         const movieContainer = document.getElementById('movie-container');
+        const fullscreenButton = container.querySelector('.fullscreen-toggle-button');
+
+        fullscreenButton.addEventListener('click', () => {
+            container.parentElement.classList.toggle('is-fullscreen');
+        });
 
         const notionMovies = await fetchNotionMovies();
         const moviePromises = notionMovies.map(async movie => ({ ...movie, providers: await getWatchProvidersForMovie(movie.title) }));
@@ -231,22 +242,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const movie = allMoviesData.find(m => m.title.toLowerCase().includes(chatInput.value.toLowerCase()));
+        // ★★★ 修正点: AIに渡す映画リストの「視聴済み」/「未視聴」のテキストを正しく設定 ★★★
+        const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
-
 # あなたが持っている情報
 以下の映画リストを知っています。視聴済みかどうかも把握しています。
 ${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視聴'})`).join('\n')}
-
 # あなたの行動ルール
 1. **映画の特定と確認:** ユーザーの発言がリスト内の特定の映画タイトルに言及している場合、その映画を1-2文で簡潔に紹介し、「この映画について、もっと詳しく知りたいですか？それとも視聴しますか？」と尋ねてください。
-2. **視聴の意思表示:** ユーザーが「見る」「視聴する」と答えた場合、その映画のURLと視聴済みボタンを提示してください。
-    - URLの形式: '<a href="${movie ? movie.url : '#'}" target="_blank" class="ai-link">視聴ページへ</a>'
-    - ボタンの形式: '<button class="ai-button" data-page-id="${movie ? movie.pageId : ''}">視聴済みにする</button>'
-3. **おすすめの提案:** ユーザーが「おすすめは？」や「何か面白い映画ある？」のように尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、その理由と共に推薦してください。「例えば『${allMoviesData.find(m => !m.isWatched)?.title || '（未視聴の映画がありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
-4. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
-5. **視聴済み報告:** ユーザーが視聴済みボタンを押したことを報告してきたら、「Notionを更新しました！」と返信してください。
+2. **おすすめの提案:** ユーザーが「おすすめは？」や「何か面白い映画ある？」のように尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、その理由と共に推薦してください。「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
+3. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
+4. **視聴済み報告:** ユーザーが視聴済みボタンを押したことを報告してきたら、「Notionを更新しました！」と返信してください。
 `;
         
         chatHistory = [
@@ -288,7 +295,7 @@ ${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視
         item.addEventListener('click', () => {
             const isFocused = item.classList.contains('is-focused');
             
-            gridItems.forEach(i => i.classList.remove('is-focused'));
+            gridItems.forEach(i => i.classList.remove('is-focused', 'is-fullscreen'));
             gridContainer.classList.remove('focus-active');
 
             if (!isFocused) {
@@ -308,6 +315,7 @@ ${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視
         });
     });
 });
+
 
 
 
