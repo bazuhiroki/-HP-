@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
-    // ★★★ 改善点1: 表示する配信サービスを限定する ★★★
     const ALLOWED_PROVIDERS = ['Netflix', 'Hulu', 'Amazon Prime Video'];
 
     // --- グローバル変数 ---
@@ -57,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!providersRes.ok) return [];
             const providersData = await providersRes.json();
             const allProviders = providersData.results?.JP?.flatrate || [];
-            // ★★★ 改善点1: 許可されたプロバイダーのみにフィルタリング ★★★
             return allProviders.filter(p => ALLOWED_PROVIDERS.includes(p.provider_name));
         } catch (error) { console.error(`TMDb情報取得エラー (${title}):`, error); return []; }
     }
@@ -77,27 +75,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function callGeminiAPI(prompt) {
         if (!GEMINI_API_KEY) return "エラー: Gemini APIキーが設定されていません。";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
         
-        // ★★★ 改善点2: ユーザーの最新プロンプトのみ履歴に追加 ★★★
+        // ★★★ 修正点: AIモデル名を最新のものに変更しました ★★★
+        const modelName = 'gemini-1.5-flash-latest';
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+        
         chatHistory.push({ role: "user", parts: [{ text: prompt }] });
         
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // 常に完全な履歴を送信
                 body: JSON.stringify({ contents: chatHistory })
             });
-            if (!response.ok) throw new Error("Gemini API request failed");
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 console.error("Gemini API Error Response:", errorData);
+                 throw new Error("Gemini API request failed");
+            }
             const data = await response.json();
             const aiResponse = data.candidates[0].content.parts[0].text;
-            // AIの応答も履歴に追加
             chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
             return aiResponse;
         } catch (error) {
             console.error("Gemini API Fetch Error:", error);
-            chatHistory.pop(); // エラー時は最後のユーザー入力を削除
+            chatHistory.pop(); 
             return "AIとの通信でエラーが発生しました。";
         }
     }
@@ -125,13 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const movieContainer = document.getElementById('movie-container');
         const groupedByProvider = {};
         movies.forEach(movie => {
-            // 配信サービス情報がある映画のみを対象とする
             if (movie.providers && movie.providers.length > 0) {
                 movie.providers.forEach(provider => {
                     if (!groupedByProvider[provider.provider_name]) {
                         groupedByProvider[provider.provider_name] = { logo_path: provider.logo_path, movies: [] };
                     }
-                    // 重複を避ける
                     if (!groupedByProvider[provider.provider_name].movies.some(m => m.pageId === movie.pageId)) {
                         groupedByProvider[provider.provider_name].movies.push(movie);
                     }
@@ -193,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
         thinkingWrapper.innerHTML = `<div class="chat-bubble chat-bubble-ai">...</div>`;
         document.getElementById('chat-box').appendChild(thinkingWrapper);
         
-        // ★★★ 改善点2: ユーザーの入力だけをプロンプトとして送信 ★★★
         const prompt = userInput;
 
         const aiResponse = await callGeminiAPI(prompt);
@@ -232,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ★★★ 改善点2: 最初にAIに役割と情報を記憶させる ★★★
         const movie = allMoviesData.find(m => m.title.toLowerCase().includes(chatInput.value.toLowerCase()));
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
@@ -251,7 +249,6 @@ ${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視
 5. **視聴済み報告:** ユーザーが視聴済みボタンを押したことを報告してきたら、「Notionを更新しました！」と返信してください。
 `;
         
-        // 会話履歴を初期化
         chatHistory = [
             { role: "user", parts: [{ text: initialSystemPrompt }] },
             { role: "model", parts: [{ text: "承知いたしました。映画コンシェルジュとして、ご案内します。" }] }
@@ -311,6 +308,7 @@ ${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視
         });
     });
 });
+
 
 
 
