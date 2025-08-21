@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allMoviesData = [];
     let chatHistory = [];
     let isMovieAppInitialized = false;
+    let currentMovieContext = null; 
 
     // --- HTML要素の取得 ---
     const gridContainer = document.getElementById('grid-container');
@@ -168,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="movie-grid">
                             ${provider.movies.map(movie => `
-                                <!-- ★★★ 修正点: カード内のコピーボタンを削除 ★★★ -->
                                 <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-title="${movie.title}">
                                     <p class="movie-card-title">${movie.title}</p>
                                     ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済み</span>' : ''}
@@ -202,15 +202,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         displayMessage(userInput, 'user');
         chatInput.value = '';
-        sendButton.disabled = true;
 
+        const viewIntentKeywords = ['見る', 'みたい', '視聴'];
+        const isViewIntent = viewIntentKeywords.some(keyword => userInput.toLowerCase().includes(keyword));
+
+        if (isViewIntent && currentMovieContext) {
+            let responseHtml = `「${currentMovieContext.title}」ですね。<br>`;
+            if (currentMovieContext.url) {
+                responseHtml += `<a href="${currentMovieContext.url}" target="_blank" class="ai-link">視聴ページへ</a>`;
+            } else {
+                responseHtml += `申し訳ありません、視聴URLは未登録でした。代わりにFilmarksで探せます。<br>` +
+                              `<button class="ai-button copy-ai-title" data-title="${currentMovieContext.title}">タイトルをコピー</button>` +
+                              `<a href="https://filmarks.com/search/movies?q=${encodeURIComponent(currentMovieContext.title)}" target="_blank" class="ai-link">Filmarksで探す</a>`;
+            }
+            responseHtml += `<button class="ai-button" data-page-id="${currentMovieContext.pageId}">視聴済みにする</button>`;
+            displayMessage(responseHtml, 'ai');
+            currentMovieContext = null; // 文脈をリセット
+            return;
+        }
+
+        sendButton.disabled = true;
         const thinkingWrapper = document.createElement('div');
         thinkingWrapper.className = 'chat-bubble-wrapper ai';
         thinkingWrapper.innerHTML = `<div class="chat-bubble chat-bubble-ai">...</div>`;
         document.getElementById('chat-box').appendChild(thinkingWrapper);
         
-        const prompt = userInput;
+        const mentionedMovie = allMoviesData.find(m => userInput.includes(m.title));
+        if (mentionedMovie) {
+            currentMovieContext = mentionedMovie; 
+        } else if (!isViewIntent) {
+            currentMovieContext = null; 
+        }
 
+        const prompt = userInput;
         const aiResponse = await callGeminiAPI(prompt);
         thinkingWrapper.remove();
         displayMessage(aiResponse, 'ai');
@@ -221,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initializeMovieApp(container) {
         if (isMovieAppInitialized) return;
         isMovieAppInitialized = true;
+        currentMovieContext = null;
 
         renderMovieAppStructure(container);
 
@@ -245,35 +270,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderMovieLists(allMoviesData);
 
-        // ★★★ 修正点: カードクリックのイベントリスナーをシンプル化 ★★★
         movieContainer.addEventListener('click', (e) => {
             const card = e.target.closest('.movie-card');
             if (card) {
-                chatInput.value = card.dataset.title;
+                const title = card.dataset.title;
+                chatInput.value = title;
                 chatInput.focus();
+                currentMovieContext = allMoviesData.find(m => m.title === title) || null;
             }
         });
 
         const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
-
 # あなたが持っている情報
-以下の映画リストを知っています。各映画の視聴URLとIDも把握しています。
-${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatched ? '視聴済み' : '未視聴'}, URL: ${m.url || 'なし'}, pageId: ${m.pageId}`).join('\n')}
-
+以下の映画リストを知っています。
+${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatched ? '視聴済み' : '未視聴'}`).join('\n')}
 # あなたの行動ルール
 1. **映画の特定と確認:** ユーザーの発言がリスト内の特定の映画タイトルに言及している場合、その映画を1-2文で簡潔に紹介し、「この映画について、もっと詳しく知りたいですか？それとも視聴しますか？」と尋ねてください。
-2. **視聴の意思表示への対応:** ユーザーが「見る」「視聴する」「みたい」と答えた場合、**会話の文脈からどの映画について話しているかを判断**してください。そして、その映画の正しい情報を使って、以下の対応をしてください。
-    - **もしURLが登録されている場合:** 以下の2つを提示してください。
-        - 視聴ページのリンク: '<a href="[該当映画の正しいURL]" target="_blank" class="ai-link">視聴ページへ</a>'
-        - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
-    - **もしURLが「なし」の場合:** 「申し訳ありません、この映画の視聴URLは登録されていませんでした。代わりにFilmarksでレビューや情報を探せるリンクをご用意しました。」と伝えた上で、以下の3つを提示してください。
-        - タイトルコピーボタン: '<button class="ai-button copy-ai-title" data-title="[該当映画の正しいタイトル]">タイトルをコピー</button>'
-        - Filmarksの検索リンク: '<a href="https://filmarks.com/search/movies?q=${encodeURIComponent('[該当映画の正しいタイトル]')}" target="_blank" class="ai-link">Filmarksで探す</a>'
-        - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
-3. **おすすめの提案:** ユーザーが「おすすめは？」と尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、推薦してください。「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
-4. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
+2. **おすすめの提案:** ユーザーが「おすすめは？」と尋ねてきた場合、リストの中から**「未視聴」の映画**を1つだけ選び、推薦してください。**絶対に視聴済みの映画をおすすめしないでください。**「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
+3. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
 `;
         
         chatHistory = [
@@ -299,6 +315,10 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
             if (e.target.matches('.ai-button')) {
                 const button = e.target;
                 const pageId = button.dataset.pageId;
+                if (!pageId) {
+                    displayMessage("エラー: 更新対象の映画が見つかりませんでした。", 'ai');
+                    return;
+                }
                 button.textContent = '更新中...';
                 button.disabled = true;
                 const success = await updateNotionPageAsWatched(pageId);
@@ -317,7 +337,11 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
     // --- メインのグリッド操作ロジック ---
 
     gridItems.forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.content-detail')) {
+                return;
+            }
+
             const isFocused = item.classList.contains('is-focused');
             
             gridItems.forEach(i => i.classList.remove('is-focused', 'is-fullscreen'));
@@ -340,6 +364,7 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
     });
 });
+
 
 
 
