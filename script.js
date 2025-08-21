@@ -188,18 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         thinkingWrapper.innerHTML = `<div class="chat-bubble chat-bubble-ai">...</div>`;
         document.getElementById('chat-box').appendChild(thinkingWrapper);
         
-        const movie = allMoviesData.find(m => userInput.includes(m.title));
-        let prompt;
-
-        if (userInput.includes("見る") || userInput.includes("視聴")) {
-             prompt = `ユーザーが映画の視聴を希望しています。会話の文脈から、どの映画について話しているか判断してください。もし特定の映画について話していると判断した場合、その映画のURLと視聴済みボタンを提示してください。
-- 該当映画の情報: ${movie ? `{title: "${movie.title}", url: "${movie.url}", pageId: "${movie.pageId}"}` : "不明"}
-- URLの形式: '<a href="[ここにURL]" target="_blank" class="ai-link">視聴ページへ</a>'
-- ボタンの形式: '<button class="ai-button" data-page-id="[ここにPageID]">視聴済みにする</button>'
-もしどの映画か特定できなければ、「どの映画を視聴しますか？」と聞き返してください。`;
-        } else {
-            prompt = userInput;
-        }
+        const prompt = userInput;
 
         const aiResponse = await callGeminiAPI(prompt);
         thinkingWrapper.remove();
@@ -224,7 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const movieContainer = document.getElementById('movie-container');
         const fullscreenButton = container.querySelector('.fullscreen-toggle-button');
 
-        fullscreenButton.addEventListener('click', () => {
+        // ★★★ 改善点1: 全画面表示ボタンのイベントリスナーを修正 ★★★
+        fullscreenButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // 親要素へのクリックイベントの伝播を停止
             container.parentElement.classList.toggle('is-fullscreen');
         });
 
@@ -242,18 +233,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ★★★ 修正点: AIに渡す映画リストの「視聴済み」/「未視聴」のテキストを正しく設定 ★★★
+        // ★★★ 改善点2: AIへの指示（プロンプト）を大幅に改善 ★★★
         const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
+
 # あなたが持っている情報
-以下の映画リストを知っています。視聴済みかどうかも把握しています。
-${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視聴'})`).join('\n')}
+以下の映画リストを知っています。各映画の視聴URLとIDも把握しています。
+${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatched ? '視聴済み' : '未視聴'}, URL: ${m.url || 'なし'}, pageId: ${m.pageId}`).join('\n')}
+
 # あなたの行動ルール
 1. **映画の特定と確認:** ユーザーの発言がリスト内の特定の映画タイトルに言及している場合、その映画を1-2文で簡潔に紹介し、「この映画について、もっと詳しく知りたいですか？それとも視聴しますか？」と尋ねてください。
-2. **おすすめの提案:** ユーザーが「おすすめは？」や「何か面白い映画ある？」のように尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、その理由と共に推薦してください。「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
-3. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
-4. **視聴済み報告:** ユーザーが視聴済みボタンを押したことを報告してきたら、「Notionを更新しました！」と返信してください。
+2. **視聴の意思表示への対応:** ユーザーが「見る」「視聴する」と答えた場合、**会話の文脈からどの映画について話しているかを判断**してください。そして、その映画の正しい情報を使って、以下の2つを**必ず**提示してください。
+    - 視聴ページのリンク: '<a href="[該当映画の正しいURL]" target="_blank" class="ai-link">視聴ページへ</a>'
+    - 視聴済みボタン: '<button class="ai-button" data-page-id="[該当映画の正しいpageId]">視聴済みにする</button>'
+    - もしURLが「なし」の場合は、「申し訳ありません、この映画の視聴URLは登録されていません。」と伝えてください。
+3. **おすすめの提案:** ユーザーが「おすすめは？」と尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、推薦してください。「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
+4. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
 `;
         
         chatHistory = [
@@ -315,6 +311,7 @@ ${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視
         });
     });
 });
+
 
 
 
