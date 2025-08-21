@@ -31,11 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (button) {
                 button.textContent = '✅ コピー完了';
                 setTimeout(() => {
-                    if (button.classList.contains('copy-title-button')) {
-                         button.textContent = '📋';
-                    } else {
-                         button.textContent = 'タイトルをコピー';
-                    }
+                    button.textContent = 'タイトルをコピー';
                 }, 1500);
             }
         } catch (err) {
@@ -172,8 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="movie-grid">
                             ${provider.movies.map(movie => `
+                                <!-- ★★★ 修正点: カード内のコピーボタンを削除 ★★★ -->
                                 <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-title="${movie.title}">
-                                    <button class="copy-title-button" data-title="${movie.title}" title="タイトルをコピー">📋</button>
                                     <p class="movie-card-title">${movie.title}</p>
                                     ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済み</span>' : ''}
                                 </div>
@@ -249,14 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderMovieLists(allMoviesData);
 
+        // ★★★ 修正点: カードクリックのイベントリスナーをシンプル化 ★★★
         movieContainer.addEventListener('click', (e) => {
-            const copyButton = e.target.closest('.copy-title-button');
-            if (copyButton) {
-                e.stopPropagation();
-                copyToClipboard(copyButton.dataset.title, copyButton);
-                return;
-            }
-
             const card = e.target.closest('.movie-card');
             if (card) {
                 chatInput.value = card.dataset.title;
@@ -264,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ★★★ 改善点: AIへの指示（プロンプト）をコピーボタン対応に更新 ★★★
         const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
@@ -302,7 +291,6 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
 
         chatBox.addEventListener('click', async (e) => {
-            // ★★★ 改善点: AIが生成したコピーボタンの処理を追加 ★★★
             if (e.target.matches('.copy-ai-title')) {
                 copyToClipboard(e.target.dataset.title, e.target);
                 return;
@@ -352,6 +340,7 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
     });
 });
+
 
 
 
