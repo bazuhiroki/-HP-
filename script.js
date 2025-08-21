@@ -6,12 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     // Gemini APIキーをここに設定してください。
-    // ※注意: 本来はサーバーサイドで管理すべきキーです。
     const GEMINI_API_KEY = 'AIzaSyDUfeARP0PATgGlG17Grqit29-U0ya5vhQ'; 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-    
-    // ★★★ 修正点：証明書が有効な別のプロキシサーバーに変更しました ★★★
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
+
+    // ★★★ 改善点1: 表示する配信サービスを限定する ★★★
+    const ALLOWED_PROVIDERS = ['Netflix', 'Hulu', 'Amazon Prime Video'];
 
     // --- グローバル変数 ---
     let allMoviesData = [];
@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- API通信用の関数 ---
 
     async function fetchNotionMovies() {
-        // ★★★ 修正点：プロキシのURLと結合する方法を修正 ★★★
         const targetUrl = `https://api.notion.com/v1/databases/${MOVIE_DATABASE_ID}/query`;
         const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
         try {
@@ -47,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function getWatchProvidersForMovie(title) {
         if (!title || title === 'タイトル不明') return [];
         try {
-            // TMDBはプロキシ不要な場合が多い
             const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}&language=ja-JP`;
             const searchRes = await fetch(searchUrl);
             if (!searchRes.ok) return [];
@@ -58,12 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const providersRes = await fetch(providersUrl);
             if (!providersRes.ok) return [];
             const providersData = await providersRes.json();
-            return providersData.results?.JP?.flatrate || [];
+            const allProviders = providersData.results?.JP?.flatrate || [];
+            // ★★★ 改善点1: 許可されたプロバイダーのみにフィルタリング ★★★
+            return allProviders.filter(p => ALLOWED_PROVIDERS.includes(p.provider_name));
         } catch (error) { console.error(`TMDb情報取得エラー (${title}):`, error); return []; }
     }
     
     async function updateNotionPageAsWatched(pageId) {
-        // ★★★ 修正点：プロキシのURLと結合する方法を修正 ★★★
         const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
         const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
         try {
@@ -79,21 +78,26 @@ document.addEventListener('DOMContentLoaded', () => {
     async function callGeminiAPI(prompt) {
         if (!GEMINI_API_KEY) return "エラー: Gemini APIキーが設定されていません。";
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+        
+        // ★★★ 改善点2: ユーザーの最新プロンプトのみ履歴に追加 ★★★
         chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+        
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                // 常に完全な履歴を送信
                 body: JSON.stringify({ contents: chatHistory })
             });
             if (!response.ok) throw new Error("Gemini API request failed");
             const data = await response.json();
             const aiResponse = data.candidates[0].content.parts[0].text;
+            // AIの応答も履歴に追加
             chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
             return aiResponse;
         } catch (error) {
             console.error("Gemini API Fetch Error:", error);
-            chatHistory.pop();
+            chatHistory.pop(); // エラー時は最後のユーザー入力を削除
             return "AIとの通信でエラーが発生しました。";
         }
     }
@@ -121,35 +125,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const movieContainer = document.getElementById('movie-container');
         const groupedByProvider = {};
         movies.forEach(movie => {
-            if (movie.providers.length > 0) {
+            // 配信サービス情報がある映画のみを対象とする
+            if (movie.providers && movie.providers.length > 0) {
                 movie.providers.forEach(provider => {
                     if (!groupedByProvider[provider.provider_name]) {
                         groupedByProvider[provider.provider_name] = { logo_path: provider.logo_path, movies: [] };
                     }
-                    groupedByProvider[provider.provider_name].movies.push(movie);
+                    // 重複を避ける
+                    if (!groupedByProvider[provider.provider_name].movies.some(m => m.pageId === movie.pageId)) {
+                        groupedByProvider[provider.provider_name].movies.push(movie);
+                    }
                 });
             }
         });
+
         let html = '';
-        for (const providerName in groupedByProvider) {
-            const provider = groupedByProvider[providerName];
-            html += `
-                <div class="provider-section">
-                    <div class="provider-header">
-                        <img src="https://image.tmdb.org/t/p/w92${provider.logo_path}" alt="${providerName}" class="provider-logo">
-                        <h3 class="provider-name">${providerName}</h3>
+        if (Object.keys(groupedByProvider).length === 0) {
+            html = '<p>指定されたサービスで視聴可能な映画は見つかりませんでした。</p>';
+        } else {
+            for (const providerName in groupedByProvider) {
+                const provider = groupedByProvider[providerName];
+                html += `
+                    <div class="provider-section">
+                        <div class="provider-header">
+                            <img src="https://image.tmdb.org/t/p/w92${provider.logo_path}" alt="${providerName}" class="provider-logo">
+                            <h3 class="provider-name">${providerName}</h3>
+                        </div>
+                        <div class="movie-grid">
+                            ${provider.movies.map(movie => `
+                                <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-title="${movie.title}">
+                                    <p class="movie-card-title">${movie.title}</p>
+                                    ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済み</span>' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="movie-grid">
-                        ${provider.movies.map(movie => `
-                            <div class="movie-card ${movie.isWatched ? 'watched' : ''}">
-                                <p class="movie-card-title">${movie.title}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }
-        movieContainer.innerHTML = html || '<p>視聴可能な映画が見つかりませんでした。</p>';
+        movieContainer.innerHTML = html;
     }
 
     function displayMessage(message, sender) {
@@ -178,20 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
         thinkingWrapper.className = 'chat-bubble-wrapper ai';
         thinkingWrapper.innerHTML = `<div class="chat-bubble chat-bubble-ai">...</div>`;
         document.getElementById('chat-box').appendChild(thinkingWrapper);
-
-        const movie = allMoviesData.find(m => m.title.toLowerCase().includes(userInput.toLowerCase()));
         
-        const prompt = `
-あなたは親切な映画コンシェルジュです。ユーザーが見たい映画について話しています。
-ユーザーのメッセージは「${userInput}」です。
-現在利用可能な映画のリスト：${allMoviesData.map(m => `"${m.title}"`).join(', ')}
-
-あなたのタスク：
-1. ユーザーが言及した映画「${movie ? movie.title : '不明'}」について、1-2文で簡潔に紹介し、「この映画をみますか？」と必ず質問してください。
-2. もしユーザーが「見る」「はい」などで肯定的に応答した場合、映画のURL（${movie ? movie.url : 'URLなし'}）と視聴済みボタンを提示してください。ボタンのHTMLは必ず '<button class="ai-button" data-page-id="${movie ? movie.pageId : ''}">視聴済みにする</button>' という形式にしてください。URLは '<a href="${movie ? movie.url : '#'}" target="_blank" class="ai-link">視聴ページへ</a>' の形式で提示してください。
-3. もしユーザーが視聴済みボタンを押したことを報告してきたら、「Notionを更新しました！」と返信してください。
-4. 映画を特定できない場合や、雑談の場合は、フレンドリーに対応してください。
-`;
+        // ★★★ 改善点2: ユーザーの入力だけをプロンプトとして送信 ★★★
+        const prompt = userInput;
 
         const aiResponse = await callGeminiAPI(prompt);
         thinkingWrapper.remove();
@@ -206,9 +209,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderMovieAppStructure(container);
 
+        container.querySelector('.movie-app-container').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
         const chatInput = document.getElementById('chat-input');
         const sendButton = document.getElementById('send-button');
         const chatBox = document.getElementById('chat-box');
+        const movieContainer = document.getElementById('movie-container');
 
         const notionMovies = await fetchNotionMovies();
         const moviePromises = notionMovies.map(async movie => ({ ...movie, providers: await getWatchProvidersForMovie(movie.title) }));
@@ -216,8 +224,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderMovieLists(allMoviesData);
 
-        const initialAiMessage = "今日は何を見ますか？リストから見たい映画のタイトルを教えてください。";
-        chatHistory.push({ role: "model", parts: [{ text: initialAiMessage }] });
+        movieContainer.addEventListener('click', (e) => {
+            const card = e.target.closest('.movie-card');
+            if (card) {
+                chatInput.value = card.dataset.title;
+                chatInput.focus();
+            }
+        });
+
+        // ★★★ 改善点2: 最初にAIに役割と情報を記憶させる ★★★
+        const movie = allMoviesData.find(m => m.title.toLowerCase().includes(chatInput.value.toLowerCase()));
+        const initialSystemPrompt = `
+あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
+
+# あなたが持っている情報
+以下の映画リストを知っています。視聴済みかどうかも把握しています。
+${allMoviesData.map(m => `- ${m.title} (${m.isWatched ? '視聴済み' : '未視聴'})`).join('\n')}
+
+# あなたの行動ルール
+1. **映画の特定と確認:** ユーザーの発言がリスト内の特定の映画タイトルに言及している場合、その映画を1-2文で簡潔に紹介し、「この映画について、もっと詳しく知りたいですか？それとも視聴しますか？」と尋ねてください。
+2. **視聴の意思表示:** ユーザーが「見る」「視聴する」と答えた場合、その映画のURLと視聴済みボタンを提示してください。
+    - URLの形式: '<a href="${movie ? movie.url : '#'}" target="_blank" class="ai-link">視聴ページへ</a>'
+    - ボタンの形式: '<button class="ai-button" data-page-id="${movie ? movie.pageId : ''}">視聴済みにする</button>'
+3. **おすすめの提案:** ユーザーが「おすすめは？」や「何か面白い映画ある？」のように尋ねてきた場合、リストの中から**未視聴の映画**を1つ選び、その理由と共に推薦してください。「例えば『${allMoviesData.find(m => !m.isWatched)?.title || '（未視聴の映画がありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
+4. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。
+5. **視聴済み報告:** ユーザーが視聴済みボタンを押したことを報告してきたら、「Notionを更新しました！」と返信してください。
+`;
+        
+        // 会話履歴を初期化
+        chatHistory = [
+            { role: "user", parts: [{ text: initialSystemPrompt }] },
+            { role: "model", parts: [{ text: "承知いたしました。映画コンシェルジュとして、ご案内します。" }] }
+        ];
+
+        const initialAiMessage = "今日は何を見ますか？リストの映画をクリックするか、タイトルを入力してください。おすすめを聞いてくれてもいいですよ。";
         displayMessage(initialAiMessage, 'ai');
         sendButton.disabled = false;
 
@@ -262,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     initializeMovieApp(item.querySelector('.content-detail'));
                 }
             } else {
-                // フォーカス解除時に映画アプリの状態をリセット
                 if (item.classList.contains('movie')) {
                     isMovieAppInitialized = false;
                     item.querySelector('.content-detail').innerHTML = '';
@@ -272,6 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
