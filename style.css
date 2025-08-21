@@ -74,7 +74,7 @@ body {
     transition: opacity 0.3s ease-in-out 0.3s;
     overflow: auto;
     background-color: white;
-    pointer-events: none; /* 透明な時はクリックを無効化 */
+    pointer-events: none;
 }
 .grid-item .content-detail h2 { margin-top: 0; }
 
@@ -103,27 +103,67 @@ body {
     grid-area: 1 / 1 / -1 / -1; 
     z-index: 100;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    resize: both;
+    overflow: auto;
+    min-width: 400px;
+    min-height: 300px;
 }
 .grid-container.focus-active .grid-item.is-focused .content-main { opacity: 0; }
 .grid-container.focus-active .grid-item.is-focused .content-detail {
     opacity: 1;
-    pointer-events: auto; /* 表示されたらクリックを有効化 */
+    pointer-events: auto;
 }
 
 
 /* --- ここから映画・AIチャット用の追加CSS --- */
 
+.grid-item.is-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 1000 !important;
+    transition: all 0.3s ease-in-out !important;
+    resize: none !important;
+}
+
+.fullscreen-toggle-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 101;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background-color 0.2s;
+}
+.fullscreen-toggle-button:hover {
+    background: rgba(0,0,0,0.7);
+}
+
 .movie-app-container {
     display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 50% 50%; /* 上下50%ずつ */
+    grid-template-rows: 50% 50%;
     height: 100%;
     gap: 20px;
 }
 
 #movie-container {
     overflow-y: auto;
-    padding-right: 15px; /* スクロールバーのスペース */
+    padding-right: 15px;
 }
 
 #chat-section {
@@ -236,12 +276,12 @@ body {
     font-size: 14px;
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
 }
 .movie-card:hover {
     background-color: #e9ecef;
 }
 
-/* ★★★ 修正点: 視聴済みカードのデザインを分かりやすく変更 ★★★ */
 .movie-card.watched {
     background-color: #e9ecef;
     opacity: 0.7;
@@ -258,8 +298,6 @@ body {
     margin-top: 4px;
 }
 
-
-/* AIが生成するボタンのスタイル */
 .ai-button {
     background-color: #28a745;
     color: white;
@@ -273,6 +311,13 @@ body {
 .ai-button:hover {
     background-color: #218838;
 }
+.copy-ai-title {
+    background-color: #007bff;
+}
+.copy-ai-title:hover {
+    background-color: #0056b3;
+}
+
 .ai-link {
     color: #007bff;
     text-decoration: none;
@@ -280,5 +325,6 @@ body {
 .ai-link:hover {
     text-decoration: underline;
 }
+
 
 
