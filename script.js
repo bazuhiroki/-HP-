@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     // Gemini APIキーをここに設定してください。
-    const GEMINI_API_KEY = 'AIzaSyAHpVHauAheOp2QE0CIa-Q7sPRHUxSpc-Y'; 
+    const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA'; 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
