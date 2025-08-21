@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 pageId: page.id,
                 title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
                 url: page.properties['URL 1']?.url || null,
-                isWatched: page.properties["視聴済み"]?.checkbox || false
+                // ★★★ 修正点: チェックボックスの値をより厳密に判定します ★★★
+                isWatched: page.properties["視聴済み"]?.checkbox === true
             }));
         } catch (error) { console.error("Notionデータ取得エラー:", error); return []; }
     }
@@ -217,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             responseHtml += `<button class="ai-button" data-page-id="${currentMovieContext.pageId}">視聴済みにする</button>`;
             displayMessage(responseHtml, 'ai');
-            currentMovieContext = null; // 文脈をリセット
+            currentMovieContext = null; 
             return;
         }
 
@@ -364,6 +365,7 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
     });
 });
+
 
 
 
