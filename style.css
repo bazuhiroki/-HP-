@@ -234,14 +234,30 @@ body {
     border-radius: 6px;
     border: 1px solid #e9ecef;
     font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
+.movie-card:hover {
+    background-color: #e9ecef;
+}
+
+/* ★★★ 修正点: 視聴済みカードのデザインを分かりやすく変更 ★★★ */
 .movie-card.watched {
-    opacity: 0.6;
+    background-color: #e9ecef;
+    opacity: 0.7;
+}
+.movie-card.watched .movie-card-title {
     text-decoration: line-through;
+    color: #6c757d;
 }
-.movie-card-title {
+.watched-badge {
+    font-size: 11px;
+    color: #28a745;
     font-weight: bold;
+    display: block;
+    margin-top: 4px;
 }
+
 
 /* AIが生成するボタンのスタイル */
 .ai-button {
@@ -264,4 +280,5 @@ body {
 .ai-link:hover {
     text-decoration: underline;
 }
+
 
