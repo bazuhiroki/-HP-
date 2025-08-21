@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     // Gemini APIキーをここに設定してください。
-    const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA'; 
+    const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
     const ALLOWED_PROVIDERS = ['Netflix', 'Hulu', 'Amazon Prime Video'];
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allMoviesData = [];
     let chatHistory = [];
     let isMovieAppInitialized = false;
-    let currentMovieContext = null; 
+    let currentMovieContext = null;
 
     // --- HTML要素の取得 ---
     const gridContainer = document.getElementById('grid-container');
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pageId: page.id,
                 title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
                 url: page.properties['URL 1']?.url || null,
-                // ★★★ 修正点: チェックボックスの値をより厳密に判定します ★★★
+                // ▼▼▼【修正済みの箇所】▼▼▼
                 isWatched: page.properties["視聴済み"]?.checkbox === true
             }));
         } catch (error) { console.error("Notionデータ取得エラー:", error); return []; }
@@ -106,9 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ contents: chatHistory })
             });
             if (!response.ok) {
-                 const errorData = await response.json();
-                 console.error("Gemini API Error Response:", errorData);
-                 throw new Error("Gemini API request failed");
+                const errorData = await response.json();
+                console.error("Gemini API Error Response:", errorData);
+                throw new Error("Gemini API request failed");
             }
             const data = await response.json();
             const aiResponse = data.candidates[0].content.parts[0].text;
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return aiResponse;
         } catch (error) {
             console.error("Gemini API Fetch Error:", error);
-            chatHistory.pop(); 
+            chatHistory.pop();
             return "AIとの通信でエラーが発生しました。";
         }
     }
@@ -213,12 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 responseHtml += `<a href="${currentMovieContext.url}" target="_blank" class="ai-link">視聴ページへ</a>`;
             } else {
                 responseHtml += `申し訳ありません、視聴URLは未登録でした。代わりにFilmarksで探せます。<br>` +
-                              `<button class="ai-button copy-ai-title" data-title="${currentMovieContext.title}">タイトルをコピー</button>` +
-                              `<a href="https://filmarks.com/search/movies?q=${encodeURIComponent(currentMovieContext.title)}" target="_blank" class="ai-link">Filmarksで探す</a>`;
+                                `<button class="ai-button copy-ai-title" data-title="${currentMovieContext.title}">タイトルをコピー</button>` +
+                                `<a href="https://filmarks.com/search/movies?q=${encodeURIComponent(currentMovieContext.title)}" target="_blank" class="ai-link">Filmarksで探す</a>`;
             }
             responseHtml += `<button class="ai-button" data-page-id="${currentMovieContext.pageId}">視聴済みにする</button>`;
             displayMessage(responseHtml, 'ai');
-            currentMovieContext = null; 
+            currentMovieContext = null;
             return;
         }
 
@@ -230,9 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const mentionedMovie = allMoviesData.find(m => userInput.includes(m.title));
         if (mentionedMovie) {
-            currentMovieContext = mentionedMovie; 
+            currentMovieContext = mentionedMovie;
         } else if (!isViewIntent) {
-            currentMovieContext = null; 
+            currentMovieContext = null;
         }
 
         const prompt = userInput;
