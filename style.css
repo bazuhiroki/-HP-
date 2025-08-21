@@ -365,11 +365,17 @@ body {
         padding: 0 15px; /* 横の余白を調整 */
     }
 
-    /* フォーカスされたアイテムは画面全体に広がるように調整 */
+    /* ▼▼▼【修正点】スマホでは拡大表示を画面固定のオーバーレイに変更 ▼▼▼ */
     .grid-container.focus-active .grid-item.is-focused {
-        min-width: unset; /* 最小幅の指定を解除 */
+        position: fixed;   /* 画面基準で位置を固定 */
+        top: 5vh;          /* 画面の上から5%の位置に配置 */
+        left: 5vw;         /* 画面の左から5%の位置に配置 */
+        width: 90vw;       /* 幅を画面の90%に設定 */
+        height: 85vh;      /* 高さを画面の85%に設定 */
+        grid-area: auto;   /* grid-areaの指定をリセット */
+        min-width: unset;
         min-height: unset;
-        resize: none; /* リサイズを無効化 */
+        resize: none;
     }
 
     .grid-item .content-detail {
@@ -378,15 +384,13 @@ body {
 
     /* 映画アプリのレイアウトを縦積みに変更 */
     .movie-app-container {
-        /* ▼▼▼【修正点】高さをバランス良く分割 ▼▼▼ */
         grid-template-rows: 45% 55%; 
         grid-template-columns: 1fr;
         gap: 15px;
     }
 
     #movie-container {
-        /* ▼▼▼【修正点】max-heightは不要になるため削除 ▼▼▼ */
-        /* max-height: 40vh; */
+        /* max-heightは不要になったため削除 */
     }
 
     /* 映画カードの最小幅を調整 */
@@ -410,6 +414,7 @@ body {
         max-width: 90%; /* チャットの吹き出し幅を調整 */
     }
 }
+
 
 
 
