@@ -113,32 +113,108 @@ body {
 
 /* --- 映画アプリ専用スタイル --- */
 
-/* メニューボタン */
-#movie-menu-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    width: 100%;
+.movie-menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 20px;
     height: 100%;
+    align-content: center;
 }
 
-.movie-menu-button {
-    background: linear-gradient(145deg, var(--primary-color), #293f5a);
-    color: var(--white);
-    border: none;
+.movie-menu-card {
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 20px 40px;
-    font-size: 18px;
-    font-weight: 700;
+    padding: 40px;
+    text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: var(--shadow-md);
 }
 
-.movie-menu-button:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(61, 90, 128, 0.4);
+.movie-menu-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+    background-color: var(--white);
+}
+
+.movie-menu-card .card-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.movie-menu-card .card-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0 0 10px 0;
+}
+
+.movie-menu-card .card-description {
+    font-size: 14px;
+    color: var(--text-light);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* フィルターボタン */
+.filter-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-button {
+    background-color: var(--white);
+    color: var(--text-light);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.filter-button:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.filter-button.active {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+/* ソースタグ */
+.movie-card {
+    position: relative;
+}
+
+.source-tag {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* UI崩れ対策 */
+.provider-section {
+    min-width: 0;
+}
+
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
 }
 
 /* チャットUI */
@@ -154,7 +230,6 @@ body {
     border-bottom-right-radius: 4px;
 }
 
-/* AIが提示するボタン */
 .ai-button {
     background-color: var(--white);
     color: var(--primary-color);
@@ -239,14 +314,13 @@ body {
         grid-area: auto;
     }
 
-    #movie-menu-container {
-        flex-direction: column;
+    .movie-menu-grid {
+        grid-template-columns: 1fr;
         gap: 20px;
     }
 
-    .movie-menu-button {
-        width: 80%;
-        padding: 15px;
+    .movie-menu-card {
+        padding: 25px;
     }
 }
 
@@ -257,7 +331,7 @@ body {
     }
 }
 
-/* --- 登場アニメーション (変更なし) --- */
+/* --- 登場アニメーション --- */
 @keyframes floatUp {
     from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
@@ -275,10 +349,10 @@ body {
 .grid-item:nth-child(11) { animation-delay: 0.6s; }
 .grid-item:nth-child(12) { animation-delay: 0.65s; }
 
-/* --- 既存の映画アプリ用CSS (変更なし) --- */
-.movie-app-container { display: grid; grid-template-rows: 50% 50%; height: 100%; gap: 20px; }
-#movie-container { overflow-y: auto; padding-right: 15px; }
-#chat-section { display: flex; flex-direction: column; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
+/* --- 既存の映画アプリ用CSS --- */
+.movie-app-container { display: grid; grid-template-rows: auto 1fr; height: 100%; gap: 0; }
+#movie-list-area { overflow-y: auto; padding: 0 15px 15px 15px; }
+#chat-section { display: flex; flex-direction: column; border-top: 1px solid var(--border-color); }
 #chat-box { flex-grow: 1; padding: 15px; overflow-y: auto; background-color: #f9f9f9; }
 .chat-input-area { display: flex; padding: 10px; border-top: 1px solid var(--border-color); }
 #chat-input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 8px 15px; font-size: 14px; }
@@ -292,16 +366,11 @@ body {
 .provider-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .provider-logo { width: 32px; height: 32px; object-fit: cover; border-radius: 6px; }
 .provider-name { font-size: 18px; font-weight: 700; }
-.movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.movie-card { background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef; font-size: 14px; cursor: pointer; transition: background-color 0.2s; position: relative; }
-.movie-card:hover { background-color: #e9ecef; }
-.movie-card.watched { background-color: #e9ecef; opacity: 0.7; }
-.movie-card.watched .movie-card-title { text-decoration: line-through; color: #6c757d; }
-.watched-badge { font-size: 11px; color: var(--success-color); font-weight: bold; display: block; margin-top: 4px; }
 .copy-ai-title { background-color: #007bff; }
 .copy-ai-title:hover { background-color: #0056b3; }
 .ai-link { color: #007bff; text-decoration: none; }
 .ai-link:hover { text-decoration: underline; }
+
 
 
 
