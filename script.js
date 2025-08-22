@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- API通信用の関数 ---
-    async function fetchNotionMovies(databaseId) {
+    async function fetchNotionPages(databaseId) {
         let allResults = [];
         let hasMore = true;
         let startCursor = undefined;
@@ -60,12 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return [];
             }
         }
-        return allResults.map(page => ({
-            pageId: page.id,
-            title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
-            url: page.properties['URL 1']?.url || null,
-            isWatched: page.properties["視聴済"]?.checkbox === true
-        }));
+        return allResults;
     }
 
     async function getWatchProvidersForMovie(title) {
@@ -199,11 +194,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatInput = container.querySelector('#chat-input');
         const sendButton = container.querySelector('#send-button');
 
-        const academyMovies = await fetchNotionMovies(ACADEMY_DB_ID);
-        const watchlistMovies = (WATCHLIST_DB_ID !== 'YOUR_NEW_WATCHLIST_DATABASE_ID') 
-            ? await fetchNotionMovies(WATCHLIST_DB_ID) 
+        const academyPages = await fetchNotionPages(ACADEMY_DB_ID);
+        const watchlistPages = (WATCHLIST_DB_ID !== 'YOUR_NEW_WATCHLIST_DATABASE_ID') 
+            ? await fetchNotionPages(WATCHLIST_DB_ID) 
             : [];
-        allMoviesData = [...academyMovies, ...watchlistMovies];
+        
+        const allPages = [...academyPages, ...watchlistPages];
+        allMoviesData = allPages.map(page => ({
+            pageId: page.id,
+            title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
+            url: page.properties['URL 1']?.url || null,
+            isWatched: page.properties["視聴済"]?.checkbox === true
+        }));
 
         const moviePromises = allMoviesData.map(async movie => ({ ...movie, providers: await getWatchProvidersForMovie(movie.title) }));
         const moviesWithProviders = await Promise.all(moviePromises);
@@ -304,27 +306,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ▼▼▼【ここからが今回の主な修正箇所です】▼▼▼
     async function initializeMovieRegisterApp(container) {
         if (isAppInitialized) return;
         isAppInitialized = true;
 
         container.innerHTML = `
             <div id="register-chat-section" style="height: 100%; display: flex; flex-direction: column;">
-                <div id="register-chat-box" style="flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;">
-                </div>
+                <div id="register-chat-box" style="flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;"></div>
                 <div class="chat-input-area" style="border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-                    <input type="text" id="register-chat-input" placeholder="メッセージを入力...">
-                    <button id="register-send-button">➤</button>
+                    <input type="text" id="register-chat-input" placeholder="メッセージを入力..." disabled>
+                    <button id="register-send-button" disabled>➤</button>
                 </div>
-            </div>
-        `;
+            </div>`;
         
         const chatBox = container.querySelector('#register-chat-box');
         const chatInput = container.querySelector('#register-chat-input');
         const sendButton = container.querySelector('#register-send-button');
 
-        let currentSearchMode = null; // 現在の検索モードを保持する変数
+        const conversationState = {
+            mode: null,
+            step: 'mode_selection',
+            params: {}
+        };
 
         function showSearchModes() {
             const initialMessageBubble = displayMessage("新しい映画を探しましょう！どのような切り口で探しますか？", 'ai', chatBox);
@@ -332,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonContainer.style.marginTop = '10px';
             const searchModes = [
                 { text: '🎬 公開中の映画を探す', mode: 'now_playing' },
-                { text: '✨ 最近公開された映画を探す', mode: 'recent' },
+                { text: '✨ 最近公開された映画を探す', mode: 'upcoming' },
                 { text: '📚 年代やジャンルで探す', mode: 'discover' },
                 { text: '🎥 監督名で探す', mode: 'director' }
             ];
@@ -351,22 +354,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     const selectedMode = e.target.dataset.mode;
                     displayMessage(e.target.textContent, 'user', chatBox);
                     buttonContainer.style.display = 'none';
-                    handleSearchModeSelection(selectedMode);
+                    handleModeSelection(selectedMode);
                 }
             });
         }
 
-        function handleSearchModeSelection(mode) {
-            currentSearchMode = mode; // 選択されたモードを記憶
+        function handleModeSelection(mode) {
+            conversationState.mode = mode;
             let nextQuestion = '';
             switch (mode) {
-                case 'now_playing': nextQuestion = '「公開中の映画」ですね。邦画と洋画、どちらがよろしいですか？'; break;
-                case 'recent': nextQuestion = '「最近公開された映画」ですね。こちらも邦画と洋画、どちらにしましょう？'; break;
-                case 'discover': nextQuestion = '「年代やジャンル」で探しましょう。ご希望の年代とジャンルを教えてください。（例: 1990年代、SF）'; break;
-                case 'director': nextQuestion = '「監督名」で検索しますね。お好きな監督の名前を教えてください。'; break;
+                case 'now_playing':
+                case 'upcoming':
+                    conversationState.step = 'region_selection';
+                    nextQuestion = '邦画と洋画、どちらがよろしいですか？';
+                    break;
+                case 'discover':
+                    conversationState.step = 'discover_params';
+                    nextQuestion = 'ご希望の年代とジャンルを教えてください。（例: 1990年代、SF）';
+                    break;
+                case 'director':
+                    conversationState.step = 'director_name';
+                    nextQuestion = 'お好きな監督の名前を教えてください。';
+                    break;
             }
             displayMessage(nextQuestion, 'ai', chatBox);
-            chatInput.focus(); // ユーザーが入力できるようにフォーカス
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            chatInput.focus();
         }
 
         async function handleUserInput() {
@@ -375,26 +389,102 @@ document.addEventListener('DOMContentLoaded', () => {
 
             displayMessage(userInput, 'user', chatBox);
             chatInput.value = '';
-            
-            // AIが考え中であることを示す
-            displayMessage("...", 'ai', chatBox);
+            chatInput.disabled = true;
+            sendButton.disabled = true;
 
-            // ここで、currentSearchModeとuserInputを使ってTMDBを検索する処理を呼び出す
-            // 今回はまだ検索せず、AIが応答するだけ
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待つ
-            const lastBubble = chatBox.lastChild;
-            lastBubble.querySelector('.chat-bubble-ai').innerHTML = `「${userInput}」ですね。承知いたしました。<br>（ここにTMDBの検索結果を表示する処理を実装します）`;
+            switch (conversationState.step) {
+                case 'region_selection':
+                    conversationState.params.region = userInput.includes('邦画') ? 'JP' : 'US';
+                    break;
+                // 他のステップの処理も後で追加
+            }
+            
+            await searchAndDisplayMovies();
         }
 
-        // --- 初期化処理の実行 ---
-        showSearchModes();
+        async function searchAndDisplayMovies() {
+            const thinkingBubble = displayMessage("データベースを検索しています...", 'ai', chatBox);
 
+            const academyPages = await fetchNotionPages(ACADEMY_DB_ID);
+            const watchlistPages = (WATCHLIST_DB_ID !== 'YOUR_NEW_WATCHLIST_DATABASE_ID')
+                ? await fetchNotionPages(WATCHLIST_DB_ID)
+                : [];
+            
+            const existingIds = new Set(
+                [...academyPages, ...watchlistPages]
+                .map(p => p.properties.TMDB?.number)
+                .filter(id => id != null)
+            );
+
+            const apiUrl = buildTmdbUrl();
+            const response = await fetch(apiUrl);
+            if (!response.ok) {
+                thinkingBubble.innerHTML = "映画情報の取得に失敗しました。";
+                return;
+            }
+            const data = await response.json();
+            const movies = data.results;
+
+            renderMovieSelectionTable(movies, existingIds, thinkingBubble);
+        }
+
+        function buildTmdbUrl() {
+            let endpoint = '';
+            const params = new URLSearchParams({ api_key: TMDB_API_KEY, language: 'ja-JP' });
+
+            switch (conversationState.mode) {
+                case 'now_playing':
+                    endpoint = 'movie/now_playing';
+                    params.append('region', conversationState.params.region || 'JP');
+                    break;
+                case 'upcoming':
+                    endpoint = 'movie/upcoming';
+                    params.append('region', conversationState.params.region || 'JP');
+                    break;
+                // 他のモードのURL構築も後で追加
+            }
+            return `https://api.themoviedb.org/3/${endpoint}?${params.toString()}`;
+        }
+
+        function renderMovieSelectionTable(movies, existingIds, bubbleToUpdate) {
+            let tableHtml = `
+                <div class="movie-selection-container">
+                    <p>追加したい映画にチェックを入れてください。</p>
+                    <table class="movie-selection-table">
+                        <thead>
+                            <tr>
+                                <th>追加</th>
+                                <th>ポスター</th>
+                                <th>タイトル</th>
+                                <th>公開日</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${movies.map(movie => `
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" data-movie-id="${movie.id}" 
+                                        ${existingIds.has(movie.id) ? 'disabled' : 'checked'}>
+                                        ${existingIds.has(movie.id) ? '<span style="font-size:10px; color: green;">登録済</span>' : ''}
+                                    </td>
+                                    <td><img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : 'https://placehold.co/50x75?text=N/A'}" alt="ポスター" width="50"></td>
+                                    <td>${movie.title}</td>
+                                    <td>${movie.release_date || '不明'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <button class="ai-button" id="add-to-notion-button">選択した映画をNotionに追加</button>
+                </div>
+            `;
+            bubbleToUpdate.innerHTML = tableHtml;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        showSearchModes();
         sendButton.addEventListener('click', handleUserInput);
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleUserInput();
-        });
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
     }
-    // ▲▲▲【ここまでが今回の主な修正箇所です】▲▲▲
 
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
@@ -445,6 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
