@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
     const ALLOWED_PROVIDERS = ['Netflix', 'Hulu', 'Amazon Prime Video'];
+    
+    // ▼▼▼【重要】Notionのプロパティ名をここに貼り付け ▼▼▼
+    const RELEASE_YEAR_PROPERTY_NAME = '公開年';
 
     // --- グローバル変数 ---
     let allMoviesData = [];
@@ -513,7 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showSearchModes();
         }
 
-        // ▼▼▼【ここが今回の修正箇所です】▼▼▼
         async function addSingleMovieToNotion(movieId) {
             try {
                 const detailUrl = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=ja-JP&append_to_response=credits`;
@@ -535,11 +537,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     '視聴済': { checkbox: false }
                 };
                 
-                // 公開年があれば、数値としてプロパティに追加
                 if (movie.release_date) {
                     const year = parseInt(movie.release_date.substring(0, 4), 10);
                     if (!isNaN(year)) {
-                        properties['公開年'] = { number: year };
+                        // ▼▼▼【修正点】変数を使ってプロパティ名を指定 ▼▼▼
+                        properties[RELEASE_YEAR_PROPERTY_NAME] = { number: year };
                     }
                 }
 
@@ -575,7 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.addEventListener('click', handleUserInput);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
     }
-    // ▲▲▲【ここまでが今回の主な修正箇所です】▲▲▲
 
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
@@ -626,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
