@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hiroki HP</title>
-    <!-- 外部CSSファイルを読み込みます -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,11 +11,6 @@
     <header class="site-header">
         <h1>Hiroki HP</h1>
     </header>
-
-    <section class="news-bar">
-        <span class="news-label">NEWS:</span>
-        <p class="news-content">ここに取得した最新ニュースが流れます。HP全体の更新情報など。</p>
-    </section>
 
     <main id="grid-container" class="grid-container">
 
@@ -53,20 +47,30 @@
             <div class="content-detail"><h2>ゴルフ</h2><p>ベストスコア更新を目指して。</p></div>
         </div>
         
-        <!-- ▼▼▼【ここを修正しました】▼▼▼ -->
+        <!-- ▼▼▼【ここを新しいカードデザインに変更しました】▼▼▼ -->
         <div class="grid-item movie">
             <div class="content-main">映画</div>
             <div class="content-detail">
-                <!-- ボタンを配置するコンテナ -->
-                <div id="movie-menu-container">
-                    <button id="show-search-button" class="movie-menu-button">映画を検索する</button>
-                    <button id="show-register-button" class="movie-menu-button">新しい映画を登録する</button>
+                <!-- 新しいメニュー構造 -->
+                <div id="movie-menu-container" class="movie-menu-grid">
+                    <!-- カード1: 検索 -->
+                    <div id="show-search-button" class="movie-menu-card">
+                        <div class="card-icon">🔍</div>
+                        <h3 class="card-title">ライブラリを検索</h3>
+                        <p class="card-description">登録済みの映画から、今観たい一本を探します。</p>
+                    </div>
+                    <!-- カード2: 登録 -->
+                    <div id="show-register-button" class="movie-menu-card">
+                        <div class="card-icon">➕</div>
+                        <h3 class="card-title">新しい映画を登録</h3>
+                        <p class="card-description">AIとの対話で、観たい映画をウォッチリストに追加します。</p>
+                    </div>
                 </div>
                 <!-- 各機能のコンテンツがここに表示される -->
                 <div id="movie-content-area"></div>
             </div>
         </div>
-        <!-- ▲▲▲【ここまで】▲▲▲ -->
+        <!-- ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ -->
 
         <div class="grid-item architecture">
             <div class="content-main">建築</div>
@@ -83,11 +87,11 @@
         
     </main>
 
-    <!-- script.jsを読み込みます -->
     <script src="script.js"></script>
 
 </body>
 </html>
+
 
 
 
