@@ -2,22 +2,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
-    // ▼▼▼ NotionデータベースID ▼▼▼
-    const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53'; // 既存のアカデミー賞DB
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★新しく作ったウォッチリストDBのIDをここに設定★★★
-    
+    const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★後で設定★★★
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
-    // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-    // Gemini APIキーをここに設定してください。
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
-    // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
     const ALLOWED_PROVIDERS = ['Netflix', 'Hulu', 'Amazon Prime Video'];
 
     // --- グローバル変数 ---
     let allMoviesData = [];
     let chatHistory = [];
-    let isAppInitialized = false; // 各アプリが初期化済みかどうかのフラグ
+    let isAppInitialized = false;
     let currentMovieContext = null;
 
     // --- HTML要素の取得 ---
@@ -36,9 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.textContent = '✅ コピー完了';
                 setTimeout(() => { button.textContent = 'タイトルをコピー'; }, 1500);
             }
-        } catch (err) {
-            console.error('テキストのコピーに失敗しました: ', err);
-        }
+        } catch (err) { console.error('テキストのコピーに失敗しました: ', err); }
         document.body.removeChild(textArea);
     }
 
@@ -47,12 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let allResults = [];
         let hasMore = true;
         let startCursor = undefined;
-
         while (hasMore) {
             const targetUrl = `https://api.notion.com/v1/databases/${databaseId}/query`;
             const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
             const body = { page_size: 100, start_cursor: startCursor };
-
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -66,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 startCursor = data.next_cursor;
             } catch (error) {
                 console.error(`Notion DB (${databaseId}) の取得エラー:`, error);
-                return []; // エラーが発生した場合は空の配列を返す
+                return [];
             }
         }
         return allResults.map(page => ({
@@ -119,11 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: chatHistory })
             });
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error("Gemini API Error Response:", errorData);
-                throw new Error("Gemini API request failed");
-            }
+            if (!response.ok) throw new Error("Gemini API request failed");
             const data = await response.json();
             const aiResponse = data.candidates[0].content.parts[0].text;
             chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
@@ -190,9 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 各機能の初期化関数 ---
 
-    /**
-     * 機能1：既存の映画検索アプリ
-     */
     async function initializeMovieSearchApp(container) {
         if (isAppInitialized) return;
         isAppInitialized = true;
@@ -214,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatInput = container.querySelector('#chat-input');
         const sendButton = container.querySelector('#send-button');
 
-        // 2つのデータベースから映画を取得して結合
         const academyMovies = await fetchNotionMovies(ACADEMY_DB_ID);
         const watchlistMovies = (WATCHLIST_DB_ID !== 'YOUR_NEW_WATCHLIST_DATABASE_ID') 
             ? await fetchNotionMovies(WATCHLIST_DB_ID) 
@@ -226,24 +209,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         renderMovieLists(moviesWithProviders, container.querySelector('#movie-list-area'));
 
-        // --- ここからチャットとイベントリスナーのロジック ---
-        
         async function handleUserInput() {
             const userInput = chatInput.value.trim();
             if (!userInput) return;
-
             displayMessage(userInput, 'user', chatBox);
             chatInput.value = '';
-
             const viewIntentKeywords = ['見る', 'みたい', '視聴'];
             const isViewIntent = viewIntentKeywords.some(keyword => userInput.toLowerCase().includes(keyword));
-
             if (isViewIntent && currentMovieContext) {
                 let responseHtml = `「${currentMovieContext.title}」ですね。<br>`;
                 if (currentMovieContext.url) {
                     responseHtml += `<a href="${currentMovieContext.url}" target="_blank" class="ai-link">視聴ページへ</a>`;
                 } else {
-                    responseHtml += `申し訳ありません、視聴URLは未登録でした。代わりにFilmarksで探せます。<br>` +
+                    responseHtml += `申し訳ありません、視聴URLは未登録でした。<br>` +
                                     `<button class="ai-button copy-ai-title" data-title="${currentMovieContext.title}">タイトルをコピー</button>` +
                                     `<a href="https://filmarks.com/search/movies?q=${encodeURIComponent(currentMovieContext.title)}" target="_blank" class="ai-link">Filmarksで探す</a>`;
                 }
@@ -252,20 +230,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentMovieContext = null;
                 return;
             }
-
             sendButton.disabled = true;
             const thinkingWrapper = document.createElement('div');
             thinkingWrapper.className = 'chat-bubble-wrapper ai';
             thinkingWrapper.innerHTML = `<div class="chat-bubble chat-bubble-ai">...</div>`;
             chatBox.appendChild(thinkingWrapper);
-
             const mentionedMovie = allMoviesData.find(m => userInput.includes(m.title));
             if (mentionedMovie) {
                 currentMovieContext = mentionedMovie;
             } else if (!isViewIntent) {
                 currentMovieContext = null;
             }
-
             const aiResponse = await callGeminiAPI(userInput);
             thinkingWrapper.remove();
             displayMessage(aiResponse, 'ai', chatBox);
@@ -276,27 +251,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
         const initialSystemPrompt = `
 あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
-# あなたが持っている情報
-以下の映画リストを知っています。
-${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatched ? '視聴済み' : '未視聴'}`).join('\n')}
+# あなたが持っている情報: ${allMoviesData.map(m => `"${m.title}"(${m.isWatched ? '視聴済み' : '未視聴'})`).join(', ')}
 # あなたの行動ルール
-1. **映画の特定と確認:** ユーザーの発言がリスト内の特定の映画タイトルに言及している場合、その映画を1-2文で簡潔に紹介し、「この映画について、もっと詳しく知りたいですか？それとも視聴しますか？」と尋ねてください。
-2. **おすすめの提案:** ユーザーが「おすすめは？」と尋ねてきた場合、リストの中から**「未視聴」の映画**を1つだけ選び、推薦してください。**絶対に視聴済みの映画をおすすめしないでください。**「例えば『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '（現在、未視聴の映画はありません）'}』はいかがでしょう？[ここに簡単な推薦理由を記述]」のように提案してください。
-3. **雑談:** 上記以外の場合は、映画に関する知識を活かして、自由に会話を楽しんでください。`;
+1. 映画の特定と確認: ユーザーの発言がリスト内の映画に言及している場合、簡潔に紹介し「詳しく知りたいですか？視聴しますか？」と尋ねる。
+2. おすすめの提案: 「おすすめは？」と聞かれたら、**「未視聴」の映画**を1つだけ選び、「『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '未視聴映画なし'}』はいかがでしょう？[推薦理由]」のように提案する。
+3. 雑談: 上記以外は自由に会話する。`;
         
         chatHistory = [
             { role: "user", parts: [{ text: initialSystemPrompt }] },
             { role: "model", parts: [{ text: "承知いたしました。映画コンシェルジュとして、ご案内します。" }] }
         ];
 
-        const initialAiMessage = "今日は何を見ますか？リストの映画をクリックするか、タイトルを入力してください。おすすめを聞いてくれてもいいですよ。";
+        const initialAiMessage = "今日は何を見ますか？リストの映画をクリックするか、タイトルを入力してください。";
         displayMessage(initialAiMessage, 'ai', chatBox);
         sendButton.disabled = false;
 
         sendButton.addEventListener('click', handleUserInput);
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleUserInput();
-        });
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
 
         container.querySelector('#movie-list-area').addEventListener('click', (e) => {
             const card = e.target.closest('.movie-card');
@@ -316,15 +287,12 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
             if (e.target.matches('.watched-button')) {
                 const button = e.target;
                 const pageId = button.dataset.pageId;
-                if (!pageId) {
-                    displayMessage("エラー: 更新対象の映画が見つかりませんでした。", 'ai', chatBox);
-                    return;
-                }
+                if (!pageId) { displayMessage("エラー: 更新対象が見つかりません。", 'ai', chatBox); return; }
                 button.textContent = '更新中...';
                 button.disabled = true;
                 const success = await updateNotionPageAsWatched(pageId);
                 if (success) {
-                    displayMessage("Notionの視聴済みチェックを更新しました！パネルを閉じるとリストに反映されます。", 'ai', chatBox);
+                    displayMessage("Notionを更新しました！パネルを閉じると反映されます。", 'ai', chatBox);
                     button.textContent = '✅ 更新完了';
                 } else {
                     displayMessage("エラー：Notionの更新に失敗しました。", 'ai', chatBox);
@@ -335,51 +303,31 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
         });
     }
 
-    /**
-     * 機能2：新しい映画を登録するアプリ
-     */
     async function initializeMovieRegisterApp(container) {
         if (isAppInitialized) return;
         isAppInitialized = true;
-
-        container.innerHTML = `
-            <div id="register-chat-section" style="height: 100%; display: flex; flex-direction: column;">
-                <div id="register-chat-box" style="flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;">
-                    <!-- 初期メッセージなどをここに表示 -->
-                </div>
-                <div class="chat-input-area" style="border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-                    <input type="text" id="register-chat-input" placeholder="メッセージを入力...">
-                    <button id="register-send-button">➤</button>
-                </div>
-            </div>
-        `;
-        
+        container.innerHTML = `<div id="register-chat-section" style="height: 100%; display: flex; flex-direction: column;"><div id="register-chat-box" style="flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;"></div><div class="chat-input-area" style="border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;"><input type="text" id="register-chat-input" placeholder="メッセージを入力..."><button id="register-send-button">➤</button></div></div>`;
         const chatBox = container.querySelector('#register-chat-box');
         displayMessage("新しい映画を探しましょう！どのような切り口で探しますか？", 'ai', chatBox);
-        // (ここに、検索モードを選択するボタンを表示するロジックなどを追加していきます)
     }
 
-    // --- メインのロジック ---
-
-    /**
-     * 「映画」パネルがクリックされたときの初期化処理
-     */
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
         const contentArea = container.querySelector('#movie-content-area');
         const searchButton = container.querySelector('#show-search-button');
         const registerButton = container.querySelector('#show-register-button');
 
-        // ボタンに一度だけイベントリスナーを設定
         if (!menuContainer.dataset.initialized) {
             menuContainer.dataset.initialized = 'true';
 
-            searchButton.addEventListener('click', () => {
+            searchButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // ★★★修正点1：イベントの伝播を停止
                 menuContainer.style.display = 'none';
                 initializeMovieSearchApp(contentArea);
             });
 
-            registerButton.addEventListener('click', () => {
+            registerButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // ★★★修正点1：イベントの伝播を停止
                 menuContainer.style.display = 'none';
                 initializeMovieRegisterApp(contentArea);
             });
@@ -388,7 +336,6 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
 
     gridItems.forEach(item => {
         item.addEventListener('click', (e) => {
-            // 詳細コンテンツ内のクリックは無視する
             if (e.target.closest('#movie-content-area')) {
                 return;
             }
@@ -401,23 +348,25 @@ ${allMoviesData.map(m => `- タイトル: "${m.title}", 視聴状況: ${m.isWatc
             if (!isAlreadyFocused) {
                 item.classList.add('is-focused');
                 gridContainer.classList.add('focus-active');
-
                 if (item.classList.contains('movie')) {
                     initializeMovieMenu(item.querySelector('.content-detail'));
                 }
             } else {
                 if (item.classList.contains('movie')) {
-                    // パネルを閉じる時にコンテンツをリセット
                     const detail = item.querySelector('.content-detail');
+                    const menuContainer = detail.querySelector('#movie-menu-container');
+                    
                     detail.querySelector('#movie-content-area').innerHTML = '';
-                    detail.querySelector('#movie-menu-container').style.display = 'flex'; // blockからflexに変更
-                    isAppInitialized = false; // フラグをリセット
-                    chatHistory = []; // チャット履歴もリセット
+                    menuContainer.style.display = 'flex';
+                    menuContainer.removeAttribute('data-initialized'); // ★★★修正点2：初期化フラグをリセット
+                    isAppInitialized = false;
+                    chatHistory = [];
                 }
             }
         });
     });
 });
+
 
 
 
