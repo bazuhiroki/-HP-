@@ -3,13 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★ ご自身のIDに設定してください ★★★
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89';
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
     const ALLOWED_PROVIDERS = ['Netflix', 'Hulu', 'Amazon Prime Video'];
-    
-    // ▼▼▼【重要】Notionのプロパティ名をここに貼り付け ▼▼▼
     const RELEASE_YEAR_PROPERTY_NAME = '公開年';
 
     // --- グローバル変数 ---
@@ -150,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="movie-grid">
                             ${provider.movies.map(movie => `
-                                <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-title="${movie.title}">
+                                <div class="movie-card ${movie.isWatched ? 'watched' : ''}" data-source="${movie.source}" data-title="${movie.title}">
+                                    <span class="source-tag">${movie.source === 'academy' ? '🏆' : '🔖'}</span>
                                     <p class="movie-card-title">${movie.title}</p>
                                     ${movie.isWatched ? '<span class="watched-badge">✅ 視聴済み</span>' : ''}
                                 </div>
@@ -184,6 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         container.innerHTML = `
             <div class="movie-app-container">
+                <div class="filter-container">
+                    <button class="filter-button active" data-filter="all">すべて表示</button>
+                    <button class="filter-button" data-filter="academy">🏆 アカデミー賞</button>
+                    <button class="filter-button" data-filter="watchlist">🔖 ウォッチリスト</button>
+                </div>
                 <div id="movie-list-area"><p>Notionから映画情報を取得中...</p></div>
                 <div id="chat-section">
                     <div id="chat-box"></div>
@@ -197,22 +201,47 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatBox = container.querySelector('#chat-box');
         const chatInput = container.querySelector('#chat-input');
         const sendButton = container.querySelector('#send-button');
+        const listArea = container.querySelector('#movie-list-area');
+        const filterButtons = container.querySelectorAll('.filter-button');
 
         const academyPages = await fetchNotionPages(ACADEMY_DB_ID);
         const watchlistPages = await fetchNotionPages(WATCHLIST_DB_ID);
         
-        const allPages = [...academyPages, ...watchlistPages];
-        allMoviesData = allPages.map(page => ({
+        const academyMovies = academyPages.map(page => ({
+            source: 'academy',
+            pageId: page.id,
+            title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
+            url: page.properties['URL 1']?.url || null,
+            isWatched: page.properties["視聴済"]?.checkbox === true
+        }));
+        const watchlistMovies = watchlistPages.map(page => ({
+            source: 'watchlist',
             pageId: page.id,
             title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明',
             url: page.properties['URL 1']?.url || null,
             isWatched: page.properties["視聴済"]?.checkbox === true
         }));
 
+        allMoviesData = [...academyMovies, ...watchlistMovies];
+
         const moviePromises = allMoviesData.map(async movie => ({ ...movie, providers: await getWatchProvidersForMovie(movie.title) }));
         const moviesWithProviders = await Promise.all(moviePromises);
         
-        renderMovieLists(moviesWithProviders, container.querySelector('#movie-list-area'));
+        renderMovieLists(moviesWithProviders, listArea);
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const filter = button.dataset.filter;
+                const filteredMovies = (filter === 'all')
+                    ? moviesWithProviders
+                    : moviesWithProviders.filter(movie => movie.source === filter);
+                
+                renderMovieLists(filteredMovies, listArea);
+            });
+        });
 
         async function handleUserInput() {
             const userInput = chatInput.value.trim();
@@ -274,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.addEventListener('click', handleUserInput);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
 
-        container.querySelector('#movie-list-area').addEventListener('click', (e) => {
+        listArea.addEventListener('click', (e) => {
             const card = e.target.closest('.movie-card');
             if (card) {
                 const title = card.dataset.title;
@@ -398,7 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'region_selection':
                     conversationState.params.region = userInput.includes('邦画') ? 'JP' : 'US';
                     break;
-                // 他のステップの処理も後で追加
             }
             
             await searchAndDisplayMovies();
@@ -441,7 +469,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     endpoint = 'movie/upcoming';
                     params.append('region', conversationState.params.region || 'JP');
                     break;
-                // 他のモードのURL構築も後で追加
             }
             return `https://api.themoviedb.org/3/${endpoint}?${params.toString()}`;
         }
@@ -540,7 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (movie.release_date) {
                     const year = parseInt(movie.release_date.substring(0, 4), 10);
                     if (!isNaN(year)) {
-                        // ▼▼▼【修正点】変数を使ってプロパティ名を指定 ▼▼▼
                         properties[RELEASE_YEAR_PROPERTY_NAME] = { number: year };
                     }
                 }
@@ -618,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const detail = item.querySelector('.content-detail');
                     const menuContainer = detail.querySelector('#movie-menu-container');
                     detail.querySelector('#movie-content-area').innerHTML = '';
-                    menuContainer.style.display = 'flex';
+                    menuContainer.style.display = 'grid'; // flexからgridに戻す
                     menuContainer.removeAttribute('data-initialized');
                     isAppInitialized = false;
                     chatHistory = [];
@@ -627,6 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
