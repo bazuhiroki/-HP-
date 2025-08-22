@@ -1,82 +1,81 @@
-@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
 
-/* 基本設定 */
+/* --- 基本設定 --- */
+:root {
+    --primary-color: #3d5a80;
+    --secondary-color: #98c1d9;
+    --light-bg: #f0f2f5;
+    --white: #ffffff;
+    --text-dark: #1c1e21;
+    --text-light: #495057;
+    --border-color: #dee2e6;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+}
+
 body {
     margin: 0;
     font-family: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #f0f2f5;
-    color: #1c1e21;
+    background-color: var(--light-bg);
+    color: var(--text-dark);
     overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
+
 .site-header { 
     padding: 20px 5%; 
 }
+
 .site-header h1 { 
     font-size: 24px; 
     margin: 0; 
     font-weight: 700; 
+    color: var(--primary-color);
 }
 
-/* ニュースバー */
-.news-bar {
-    width: 90%;
-    margin: 0 auto 20px auto;
-    background-color: #fff;
-    padding: 15px 25px;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    box-sizing: border-box;
-}
-.news-label { 
-    font-weight: 700; 
-    margin-right: 15px; 
-    color: #3d5a80; 
-}
-.news-content { 
-    margin: 0; 
-    font-size: 14px; 
-}
-
-/* Gridコンテナ */
+/* --- Grid --- */
 .grid-container {
     display: grid;
-    height: 70vh;
+    height: calc(100vh - 150px);
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 15px;
+    gap: 20px;
     padding: 0 5%;
-    transition: all 0.5s ease-in-out;
+    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* Gridアイテム */
 .grid-item {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    text-decoration: none;
-    color: #333;
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
-    transition: all 0.5s ease-in-out;
+    transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
     opacity: 0;
     animation: floatUp 0.6s ease-out forwards;
 }
+
 .grid-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12), 0 0 15px rgba(61, 90, 128, 0.3);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-md);
 }
+
 .grid-item .content-main {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
+    color: var(--primary-color);
 }
+
 .grid-item .content-detail {
     position: absolute;
     top: 0; left: 0;
@@ -86,12 +85,179 @@ body {
     opacity: 0;
     transition: opacity 0.3s ease-in-out 0.3s;
     overflow: auto;
-    background-color: white;
+    background-color: var(--white);
     pointer-events: none;
 }
-.grid-item .content-detail h2 { margin-top: 0; }
 
-/* 登場アニメーション */
+/* --- フォーカスモード --- */
+.grid-container.focus-active .grid-item { 
+    opacity: 0.2; 
+    transform: scale(0.95); 
+    filter: grayscale(80%);
+}
+
+.grid-container.focus-active .grid-item.is-focused {
+    opacity: 1;
+    transform: scale(1);
+    grid-area: 1 / 1 / -1 / -1; 
+    z-index: 100;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    filter: grayscale(0%);
+}
+
+.grid-container.focus-active .grid-item.is-focused .content-main { opacity: 0; }
+.grid-container.focus-active .grid-item.is-focused .content-detail {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- 映画アプリ専用スタイル --- */
+
+/* メニューボタン */
+#movie-menu-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    width: 100%;
+    height: 100%;
+}
+
+.movie-menu-button {
+    background: linear-gradient(145deg, var(--primary-color), #293f5a);
+    color: var(--white);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 20px 40px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+}
+
+.movie-menu-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(61, 90, 128, 0.4);
+}
+
+/* チャットUI */
+.chat-bubble-ai {
+    background-color: #e9ecef;
+    color: var(--text-dark);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-user {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-bottom-right-radius: 4px;
+}
+
+/* AIが提示するボタン */
+.ai-button {
+    background-color: var(--white);
+    color: var(--primary-color);
+    border: 1px solid var(--secondary-color);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.ai-button:hover {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    border-color: var(--secondary-color);
+}
+
+/* 映画登録テーブル */
+.movie-selection-container {
+    padding: 10px;
+}
+
+.movie-selection-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 14px;
+}
+
+.movie-selection-table th, .movie-selection-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.movie-selection-table th {
+    font-weight: 700;
+    color: var(--text-light);
+}
+
+.movie-selection-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.movie-selection-table img {
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+#add-to-notion-button {
+    display: block;
+    width: 100%;
+    margin-top: 15px;
+    background-color: var(--success-color);
+    color: var(--white);
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+#add-to-notion-button:hover {
+    background-color: #218838;
+}
+
+/* --- スマートフォン対応 --- */
+@media (max-width: 768px) {
+    body { overflow: auto; }
+    
+    .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(6, 25vh);
+        height: auto;
+        padding: 0 15px;
+    }
+
+    .grid-container.focus-active .grid-item.is-focused {
+        position: fixed;
+        top: 5vh; left: 5vw;
+        width: 90vw; height: 90vh;
+        grid-area: auto;
+    }
+
+    #movie-menu-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .movie-menu-button {
+        width: 80%;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .grid-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(12, 20vh);
+    }
+}
+
+/* --- 登場アニメーション (変更なし) --- */
 @keyframes floatUp {
     from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
@@ -109,311 +275,34 @@ body {
 .grid-item:nth-child(11) { animation-delay: 0.6s; }
 .grid-item:nth-child(12) { animation-delay: 0.65s; }
 
+/* --- 既存の映画アプリ用CSS (変更なし) --- */
+.movie-app-container { display: grid; grid-template-rows: 50% 50%; height: 100%; gap: 20px; }
+#movie-container { overflow-y: auto; padding-right: 15px; }
+#chat-section { display: flex; flex-direction: column; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
+#chat-box { flex-grow: 1; padding: 15px; overflow-y: auto; background-color: #f9f9f9; }
+.chat-input-area { display: flex; padding: 10px; border-top: 1px solid var(--border-color); }
+#chat-input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 8px 15px; font-size: 14px; }
+#chat-input:focus { outline: none; border-color: var(--primary-color); }
+#send-button { background-color: var(--primary-color); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; margin-left: 10px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+#send-button:disabled { background-color: #ccc; cursor: not-allowed; }
+.chat-bubble-wrapper { display: flex; margin-bottom: 10px; }
+.chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 18px; line-height: 1.5; }
+.chat-bubble-wrapper.user { justify-content: flex-end; }
+.provider-section { margin-bottom: 25px; }
+.provider-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.provider-logo { width: 32px; height: 32px; object-fit: cover; border-radius: 6px; }
+.provider-name { font-size: 18px; font-weight: 700; }
+.movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.movie-card { background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef; font-size: 14px; cursor: pointer; transition: background-color 0.2s; position: relative; }
+.movie-card:hover { background-color: #e9ecef; }
+.movie-card.watched { background-color: #e9ecef; opacity: 0.7; }
+.movie-card.watched .movie-card-title { text-decoration: line-through; color: #6c757d; }
+.watched-badge { font-size: 11px; color: var(--success-color); font-weight: bold; display: block; margin-top: 4px; }
+.copy-ai-title { background-color: #007bff; }
+.copy-ai-title:hover { background-color: #0056b3; }
+.ai-link { color: #007bff; text-decoration: none; }
+.ai-link:hover { text-decoration: underline; }
 
-/* フォーカス・モード */
-.grid-container.focus-active .grid-item { opacity: 0.3; transform: scale(0.9); }
-.grid-container.focus-active .grid-item.is-focused {
-    opacity: 1;
-    transform: scale(1);
-    grid-area: 1 / 1 / -1 / -1; 
-    z-index: 100;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    resize: both;
-    overflow: auto;
-    min-width: 400px;
-    min-height: 300px;
-}
-.grid-container.focus-active .grid-item.is-focused .content-main { opacity: 0; }
-.grid-container.focus-active .grid-item.is-focused .content-detail {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-
-/* --- ここから映画・AIチャット用の追加CSS --- */
-
-.grid-item.is-fullscreen {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-    z-index: 1000 !important;
-    transition: all 0.3s ease-in-out !important;
-    resize: none !important;
-}
-
-.fullscreen-toggle-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 101;
-    background: rgba(0,0,0,0.5);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    transition: background-color 0.2s;
-}
-.fullscreen-toggle-button:hover {
-    background: rgba(0,0,0,0.7);
-}
-
-.movie-app-container {
-    display: grid;
-    grid-template-rows: 50% 50%;
-    height: 100%;
-    gap: 20px;
-}
-
-#movie-container {
-    overflow-y: auto;
-    padding-right: 15px;
-}
-
-#chat-section {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-#chat-box {
-    flex-grow: 1;
-    padding: 15px;
-    overflow-y: auto;
-    background-color: #f9f9f9;
-}
-
-.chat-input-area {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #e0e0e0;
-}
-
-#chat-input {
-    flex-grow: 1;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    padding: 8px 15px;
-    font-size: 14px;
-}
-#chat-input:focus {
-    outline: none;
-    border-color: #3d5a80;
-}
-
-#send-button {
-    background-color: #3d5a80;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    margin-left: 10px;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#send-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.chat-bubble-wrapper {
-    display: flex;
-    margin-bottom: 10px;
-}
-
-.chat-bubble {
-    max-width: 80%;
-    padding: 10px 15px;
-    border-radius: 18px;
-    line-height: 1.5;
-}
-
-.chat-bubble-ai {
-    background-color: #e9ecef;
-    color: #333;
-    border-bottom-left-radius: 4px;
-}
-.chat-bubble-user {
-    background-color: #3d5a80;
-    color: white;
-    border-bottom-right-radius: 4px;
-}
-.chat-bubble-wrapper.user {
-    justify-content: flex-end;
-}
-
-.provider-section {
-    margin-bottom: 25px;
-}
-.provider-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-.provider-logo {
-    width: 32px;
-    height: 32px;
-    object-fit: cover;
-    border-radius: 6px;
-}
-.provider-name {
-    font-size: 18px;
-    font-weight: 700;
-}
-.movie-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-}
-.movie-card {
-    background-color: #f8f9fa;
-    padding: 12px;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    position: relative;
-}
-.movie-card:hover {
-    background-color: #e9ecef;
-}
-
-.movie-card.watched {
-    background-color: #e9ecef;
-    opacity: 0.7;
-}
-.movie-card.watched .movie-card-title {
-    text-decoration: line-through;
-    color: #6c757d;
-}
-.watched-badge {
-    font-size: 11px;
-    color: #28a745;
-    font-weight: bold;
-    display: block;
-    margin-top: 4px;
-}
-
-.ai-button {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 5px;
-    margin-right: 5px;
-}
-.ai-button:hover {
-    background-color: #218838;
-}
-.copy-ai-title {
-    background-color: #007bff;
-}
-.copy-ai-title:hover {
-    background-color: #0056b3;
-}
-
-.ai-link {
-    color: #007bff;
-    text-decoration: none;
-}
-.ai-link:hover {
-    text-decoration: underline;
-}
-
-/* ▼▼▼ ここからスマートフォン対応用のCSS ▼▼▼ */
-@media (max-width: 768px) {
-    body {
-        overflow: auto; /* スマホではスクロールを許可 */
-    }
-
-    .site-header h1 {
-        font-size: 20px; /* ヘッダーの文字を少し小さく */
-    }
-
-    .news-bar {
-        flex-direction: column; /* ニュースバーを縦積みに */
-        align-items: flex-start;
-        padding: 10px 15px;
-    }
-
-    /* グリッドのレイアウトを縦2列に変更 */
-    .grid-container {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(6, 1fr); /* 行数を調整 */
-        height: auto; /* 高さを自動調整 */
-        padding: 0 15px; /* 横の余白を調整 */
-    }
-
-    /* ▼▼▼【修正点】スマホでは拡大表示を画面固定のオーバーレイに変更 ▼▼▼ */
-    .grid-container.focus-active .grid-item.is-focused {
-        position: fixed;   /* 画面基準で位置を固定 */
-        top: 5vh;          /* 画面の上から5%の位置に配置 */
-        left: 5vw;         /* 画面の左から5%の位置に配置 */
-        width: 90vw;       /* 幅を画面の90%に設定 */
-        height: 85vh;      /* 高さを画面の85%に設定 */
-        grid-area: auto;   /* grid-areaの指定をリセット */
-        min-width: unset;
-        min-height: unset;
-        resize: none;
-    }
-
-    .grid-item .content-detail {
-        padding: 20px; /* 詳細表示の余白を調整 */
-    }
-
-    /* 映画アプリのレイアウトを縦積みに変更 */
-    .movie-app-container {
-        grid-template-rows: 45% 55%; 
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-
-    #movie-container {
-        /* max-heightは不要になったため削除 */
-    }
-
-    /* 映画カードの最小幅を調整 */
-    .movie-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
-}
-
-/* ▼▼▼ 画面がさらに小さいスマートフォン向けの調整 ▼▼▼ */
-@media (max-width: 480px) {
-    .grid-container {
-        grid-template-columns: 1fr; /* グリッドを縦1列に */
-        grid-template-rows: repeat(12, 20vh); /* 各アイテムの高さを調整 */
-    }
-    
-    .grid-item .content-main {
-        font-size: 16px; /* 文字サイズを調整 */
-    }
-
-    .chat-bubble {
-        max-width: 90%; /* チャットの吹き出し幅を調整 */
-    }
-}
 
 
 
