@@ -3,7 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89D'; // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+    // ▼▼▼【最重要】ここに、新しく作ったNotionデータベースのIDを設定してください！▼▼▼
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // 例: 'bde3a55a4c8a42599293116503b82a4a'
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
@@ -37,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- API通信用の関数 ---
     async function fetchNotionPages(databaseId) {
+        if (!databaseId || databaseId.includes('YOUR_NEW')) return []; // IDが未設定なら空を返す
         let allResults = [];
         let hasMore = true;
         let startCursor = undefined;
@@ -195,9 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sendButton = container.querySelector('#send-button');
 
         const academyPages = await fetchNotionPages(ACADEMY_DB_ID);
-        const watchlistPages = (WATCHLIST_DB_ID !== 'YOUR_NEW_WATCHLIST_DATABASE_ID') 
-            ? await fetchNotionPages(WATCHLIST_DB_ID) 
-            : [];
+        const watchlistPages = await fetchNotionPages(WATCHLIST_DB_ID);
         
         const allPages = [...academyPages, ...watchlistPages];
         allMoviesData = allPages.map(page => ({
@@ -306,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ▼▼▼【ここからが今回の主な修正箇所です】▼▼▼
     async function initializeMovieRegisterApp(container) {
         if (isAppInitialized) return;
         isAppInitialized = true;
@@ -407,9 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const thinkingBubble = displayMessage("データベースを検索しています...", 'ai', chatBox);
 
             const academyPages = await fetchNotionPages(ACADEMY_DB_ID);
-            const watchlistPages = (WATCHLIST_DB_ID !== 'YOUR_NEW_WATCHLIST_DATABASE_ID')
-                ? await fetchNotionPages(WATCHLIST_DB_ID)
-                : [];
+            const watchlistPages = await fetchNotionPages(WATCHLIST_DB_ID);
             
             const existingIds = new Set(
                 [...academyPages, ...watchlistPages]
@@ -537,7 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     '視聴済': { checkbox: false }
                 };
                 
-                // ★★★【修正点】画像がある場合のみ、filesプロパティを追加 ★★★
                 if (movie.poster_path) {
                     properties['ポスター画像'] = { files: [{ name: movie.poster_path, type: "external", external: { url: `https://image.tmdb.org/t/p/w500${movie.poster_path}` } }] };
                 }
@@ -570,7 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.addEventListener('click', handleUserInput);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
     }
-    // ▲▲▲【ここまでが今回の主な修正箇所です】▲▲▲
 
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
@@ -621,6 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
