@@ -163,8 +163,7 @@ body {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 0 15px; /* 左右のパディングを追加 */
 }
 
 .filter-button {
@@ -192,6 +191,16 @@ body {
 /* ソースタグ */
 .movie-card {
     position: relative;
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.movie-card:hover {
+    background-color: #e9ecef;
 }
 
 .source-tag {
@@ -370,6 +379,10 @@ body {
 .copy-ai-title:hover { background-color: #0056b3; }
 .ai-link { color: #007bff; text-decoration: none; }
 .ai-link:hover { text-decoration: underline; }
+.movie-card.watched { background-color: #e9ecef; opacity: 0.7; }
+.movie-card.watched .movie-card-title { text-decoration: line-through; color: #6c757d; }
+.watched-badge { font-size: 11px; color: var(--success-color); font-weight: bold; display: block; margin-top: 4px; }
+
 
 
 
