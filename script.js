@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★後で設定★★★
+    const WATCHLIST_DB_ID = 'YOUR_NEW_WATCHLIST_DATABASE_ID'; // ★★★後で設定★★★
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.appendChild(messageElement);
         chatBox.appendChild(wrapper);
         chatBox.scrollTop = chatBox.scrollHeight;
+        return messageElement;
     }
 
     // --- 各機能の初期化関数 ---
@@ -254,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 # あなたが持っている情報: ${allMoviesData.map(m => `"${m.title}"(${m.isWatched ? '視聴済み' : '未視聴'})`).join(', ')}
 # あなたの行動ルール
 1. 映画の特定と確認: ユーザーの発言がリスト内の映画に言及している場合、簡潔に紹介し「詳しく知りたいですか？視聴しますか？」と尋ねる。
-2. おすすめの提案: 「おすすめは？」と聞かれたら、**「未視聴」の映画**を1つだけ選び、「『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '未視聴映画なし'}』はいかがでしょう？[推薦理由]」のように提案する。
+2. おすすめの提案: 「おすすめは？」と聞かれたら、「未視聴」の映画を1つだけ選び、「『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '未視聴映画なし'}』はいかがでしょう？[推薦理由]」のように提案する。
 3. 雑談: 上記以外は自由に会話する。`;
         
         chatHistory = [
@@ -303,13 +304,92 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ▼▼▼【ここからが今回の主な修正箇所です】▼▼▼
     async function initializeMovieRegisterApp(container) {
         if (isAppInitialized) return;
         isAppInitialized = true;
-        container.innerHTML = `<div id="register-chat-section" style="height: 100%; display: flex; flex-direction: column;"><div id="register-chat-box" style="flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;"></div><div class="chat-input-area" style="border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;"><input type="text" id="register-chat-input" placeholder="メッセージを入力..."><button id="register-send-button">➤</button></div></div>`;
+
+        container.innerHTML = `
+            <div id="register-chat-section" style="height: 100%; display: flex; flex-direction: column;">
+                <div id="register-chat-box" style="flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;">
+                </div>
+                <div class="chat-input-area" style="border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+                    <input type="text" id="register-chat-input" placeholder="メッセージを入力...">
+                    <button id="register-send-button">➤</button>
+                </div>
+            </div>
+        `;
+        
         const chatBox = container.querySelector('#register-chat-box');
-        displayMessage("新しい映画を探しましょう！どのような切り口で探しますか？", 'ai', chatBox);
+        const chatInput = container.querySelector('#register-chat-input');
+        const sendButton = container.querySelector('#register-send-button');
+
+        // 1. AIからの最初のメッセージを表示
+        const initialMessageBubble = displayMessage("新しい映画を探しましょう！どのような切り口で探しますか？", 'ai', chatBox);
+
+        // 2. 選択肢ボタンのコンテナを作成
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.marginTop = '10px';
+        
+        const searchModes = [
+            { text: '🎬 公開中の映画を探す', mode: 'now_playing' },
+            { text: '✨ 最近公開された映画を探す', mode: 'recent' },
+            { text: '📚 年代やジャンルで探す', mode: 'discover' },
+            { text: '🎥 監督名で探す', mode: 'director' }
+        ];
+
+        // 3. 各ボタンを作成してコンテナに追加
+        searchModes.forEach(modeInfo => {
+            const button = document.createElement('button');
+            button.textContent = modeInfo.text;
+            button.className = 'ai-button'; // 既存のボタンスタイルを流用
+            button.style.marginRight = '5px';
+            button.style.marginBottom = '5px';
+            button.dataset.mode = modeInfo.mode;
+            buttonContainer.appendChild(button);
+        });
+
+        // 4. ボタンコンテナをAIの吹き出しの下に追加
+        initialMessageBubble.appendChild(buttonContainer);
+
+        // 5. ボタンがクリックされたときの処理
+        buttonContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.ai-button')) {
+                const selectedMode = e.target.dataset.mode;
+                // ユーザーがボタンを押したことをチャットに表示
+                displayMessage(e.target.textContent, 'user', chatBox);
+                // ボタンを非表示にする
+                buttonContainer.style.display = 'none';
+                
+                // 次のステップ（AIの追加質問など）に進む
+                handleSearchModeSelection(selectedMode, chatBox);
+            }
+        });
     }
+
+    // 検索モードが選択された後の処理を担う関数
+    function handleSearchModeSelection(mode, chatBox) {
+        // ここで、選択されたモードに応じてAIが次の質問をします。
+        // この部分は次回以降で実装していきます。
+        let nextQuestion = '';
+        switch (mode) {
+            case 'now_playing':
+                nextQuestion = '「公開中の映画」ですね。邦画と洋画、どちらがよろしいですか？';
+                break;
+            case 'recent':
+                nextQuestion = '「最近公開された映画」ですね。こちらも邦画と洋画、どちらにしましょう？';
+                break;
+            case 'discover':
+                nextQuestion = '「年代やジャンル」で探しましょう。ご希望の年代とジャンルを教えてください。（例: 1990年代、SF）';
+                break;
+            case 'director':
+                nextQuestion = '「監督名」で検索しますね。お好きな監督の名前を教えてください。';
+                break;
+        }
+        displayMessage(nextQuestion, 'ai', chatBox);
+    }
+    // ▲▲▲【ここまでが今回の主な修正箇所です】▲▲▲
+
 
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
@@ -319,15 +399,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!menuContainer.dataset.initialized) {
             menuContainer.dataset.initialized = 'true';
-
             searchButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // ★★★修正点1：イベントの伝播を停止
+                e.stopPropagation();
                 menuContainer.style.display = 'none';
                 initializeMovieSearchApp(contentArea);
             });
-
             registerButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // ★★★修正点1：イベントの伝播を停止
+                e.stopPropagation();
                 menuContainer.style.display = 'none';
                 initializeMovieRegisterApp(contentArea);
             });
@@ -339,12 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.closest('#movie-content-area')) {
                 return;
             }
-
             const isAlreadyFocused = item.classList.contains('is-focused');
-
             gridItems.forEach(i => i.classList.remove('is-focused', 'is-fullscreen'));
             gridContainer.classList.remove('focus-active');
-
             if (!isAlreadyFocused) {
                 item.classList.add('is-focused');
                 gridContainer.classList.add('focus-active');
@@ -355,10 +430,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item.classList.contains('movie')) {
                     const detail = item.querySelector('.content-detail');
                     const menuContainer = detail.querySelector('#movie-menu-container');
-                    
                     detail.querySelector('#movie-content-area').innerHTML = '';
                     menuContainer.style.display = 'flex';
-                    menuContainer.removeAttribute('data-initialized'); // ★★★修正点2：初期化フラグをリセット
+                    menuContainer.removeAttribute('data-initialized');
                     isAppInitialized = false;
                     chatHistory = [];
                 }
@@ -366,6 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
