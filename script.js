@@ -3,9 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    // ▼▼▼【最重要】ここに、新しく作ったNotionデータベースのIDを設定してください！▼▼▼
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // 例: 'bde3a55a4c8a42599293116503b82a4a'
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★ ご自身のIDに設定してください ★★★
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
@@ -39,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- API通信用の関数 ---
     async function fetchNotionPages(databaseId) {
-        if (!databaseId || databaseId.includes('YOUR_NEW')) return []; // IDが未設定なら空を返す
+        if (!databaseId || databaseId.includes('YOUR_NEW')) return [];
         let allResults = [];
         let hasMore = true;
         let startCursor = undefined;
@@ -488,7 +486,8 @@ document.addEventListener('DOMContentLoaded', () => {
             button.textContent = '登録中...';
             button.disabled = true;
 
-            const checkboxes = container.querySelectorAll('.movie-checkbox:checked');
+            const selectionContainer = button.closest('.movie-selection-container');
+            const checkboxes = selectionContainer.querySelectorAll('.movie-checkbox:checked');
             const movieIdsToAdd = Array.from(checkboxes).map(cb => cb.dataset.movieId);
 
             if (movieIdsToAdd.length === 0) {
@@ -514,6 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showSearchModes();
         }
 
+        // ▼▼▼【ここが今回の修正箇所です】▼▼▼
         async function addSingleMovieToNotion(movieId) {
             try {
                 const detailUrl = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=ja-JP&append_to_response=credits`;
@@ -535,6 +535,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     '視聴済': { checkbox: false }
                 };
                 
+                // 公開年があれば、数値としてプロパティに追加
+                if (movie.release_date) {
+                    const year = parseInt(movie.release_date.substring(0, 4), 10);
+                    if (!isNaN(year)) {
+                        properties['公開年'] = { number: year };
+                    }
+                }
+
                 if (movie.poster_path) {
                     properties['ポスター画像'] = { files: [{ name: movie.poster_path, type: "external", external: { url: `https://image.tmdb.org/t/p/w500${movie.poster_path}` } }] };
                 }
@@ -567,6 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.addEventListener('click', handleUserInput);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
     }
+    // ▲▲▲【ここまでが今回の主な修正箇所です】▲▲▲
 
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
@@ -617,6 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
