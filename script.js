@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89D'; // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
@@ -481,7 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
             bubbleToUpdate.innerHTML = tableHtml;
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            // 「Notionに追加」ボタンにイベントリスナーを追加
             const addButton = bubbleToUpdate.querySelector('#add-to-notion-button');
             addButton.addEventListener('click', handleAddToNotion);
         }
@@ -509,43 +508,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (success) {
                     successCount++;
                 }
-                await new Promise(resolve => setTimeout(resolve, 350)); // Notion APIのレート制限対策
+                await new Promise(resolve => setTimeout(resolve, 350));
             }
 
             displayMessage(`${successCount}件の映画をウォッチリストに追加しました！`, 'ai', chatBox);
             
-            // 続けて別の映画を探せるように、最初のモード選択に戻る
             showSearchModes();
         }
 
         async function addSingleMovieToNotion(movieId) {
             try {
-                // 1. TMDBから映画の詳細情報を取得 (クレジット情報も含む)
                 const detailUrl = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=ja-JP&append_to_response=credits`;
                 const detailRes = await fetch(detailUrl);
                 const movie = await detailRes.json();
 
-                // 2. Notionに登録するデータを作成
                 const director = movie.credits.crew.find(c => c.job === 'Director')?.name || '';
                 const writer = movie.credits.crew.find(c => c.job === 'Screenplay' || c.job === 'Writer')?.name || '';
                 const cast = movie.credits.cast.slice(0, 5).map(c => c.name).join(', ');
 
+                const properties = {
+                    '名前': { title: [{ text: { content: movie.title } }] },
+                    'TMDB': { number: movie.id },
+                    'あらすじ': { rich_text: [{ text: { content: (movie.overview || '').substring(0, 2000) } }] },
+                    'ジャンル': { multi_select: movie.genres.map(g => ({ name: g.name })) },
+                    '監督': { rich_text: [{ text: { content: director } }] },
+                    '脚本家': { rich_text: [{ text: { content: writer } }] },
+                    'キャスト': { rich_text: [{ text: { content: cast } }] },
+                    '視聴済': { checkbox: false }
+                };
+                
+                // ★★★【修正点】画像がある場合のみ、filesプロパティを追加 ★★★
+                if (movie.poster_path) {
+                    properties['ポスター画像'] = { files: [{ name: movie.poster_path, type: "external", external: { url: `https://image.tmdb.org/t/p/w500${movie.poster_path}` } }] };
+                }
+                if (movie.backdrop_path) {
+                    properties['背景画像'] = { files: [{ name: movie.backdrop_path, type: "external", external: { url: `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` } }] };
+                }
+
                 const notionPageData = {
                     parent: { database_id: WATCHLIST_DB_ID },
-                    properties: {
-                        '名前': { title: [{ text: { content: movie.title } }] },
-                        'TMDB': { number: movie.id },
-                        'あらすじ': { rich_text: [{ text: { content: movie.overview.substring(0, 2000) } }] },
-                        'ジャンル': { multi_select: movie.genres.map(g => ({ name: g.name })) },
-                        '監督': { rich_text: [{ text: { content: director } }] },
-                        '脚本家': { rich_text: [{ text: { content: writer } }] },
-                        'キャスト': { rich_text: [{ text: { content: cast } }] },
-                        '視聴済': { checkbox: false }
-                        // ポスターと背景画像はURL形式では直接追加できないため、今回は省略
-                    }
+                    properties: properties
                 };
 
-                // 3. Notion APIを呼び出してページを作成
                 const targetUrl = `https://api.notion.com/v1/pages`;
                 const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
                 const response = await fetch(apiUrl, {
@@ -617,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
