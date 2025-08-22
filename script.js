@@ -342,9 +342,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isAppInitialized = true;
 
         container.innerHTML = `
-            <div id="register-chat-section" style="height: 100%; display: flex; flex-direction: column;">
-                <div id="register-chat-box" style="flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;"></div>
-                <div class="chat-input-area" style="border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+            <div id="register-chat-section" class="register-chat-section">
+                <div id="register-chat-box" class="register-chat-box"></div>
+                <div class="chat-input-area">
                     <input type="text" id="register-chat-input" placeholder="メッセージを入力..." disabled>
                     <button id="register-send-button" disabled>➤</button>
                 </div>
@@ -361,21 +361,19 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         function showSearchModes() {
-            const initialMessageBubble = displayMessage("新しい映画を探しましょう！どのような切り口で探しますか？", 'ai', chatBox);
+            const initialMessageBubble = displayMessage("新しい映画を探しましょう！<br>どのような切り口で探しますか？", 'ai', chatBox);
             const buttonContainer = document.createElement('div');
-            buttonContainer.style.marginTop = '10px';
+            buttonContainer.className = 'ai-button-container';
             const searchModes = [
-                { text: '🎬 公開中の映画を探す', mode: 'now_playing' },
-                { text: '✨ 最近公開された映画を探す', mode: 'upcoming' },
-                { text: '📚 年代やジャンルで探す', mode: 'discover' },
-                { text: '🎥 監督名で探す', mode: 'director' }
+                { text: '🎬 公開中の映画', mode: 'now_playing' },
+                { text: '✨ これから公開の映画', mode: 'upcoming' },
+                { text: '📚 年代やジャンル', mode: 'discover' },
+                { text: '🎥 監督名', mode: 'director' }
             ];
             searchModes.forEach(modeInfo => {
                 const button = document.createElement('button');
                 button.textContent = modeInfo.text;
                 button.className = 'ai-button';
-                button.style.marginRight = '5px';
-                button.style.marginBottom = '5px';
                 button.dataset.mode = modeInfo.mode;
                 buttonContainer.appendChild(button);
             });
@@ -401,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'discover':
                     conversationState.step = 'discover_params';
-                    nextQuestion = 'ご希望の年代とジャンルを教えてください。（例: 1990年代、SF）';
+                    nextQuestion = 'ご希望の年代とジャンルを教えてください。<br>（例: 1990年代 SF）';
                     break;
                 case 'director':
                     conversationState.step = 'director_name';
@@ -427,6 +425,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'region_selection':
                     conversationState.params.region = userInput.includes('邦画') ? 'JP' : 'US';
                     break;
+                case 'discover_params':
+                    const yearMatch = userInput.match(/(\d{4})/);
+                    conversationState.params.year = yearMatch ? yearMatch[1] : null;
+                    conversationState.params.keywords = userInput.replace(/(\d{4}年代?)/, '').trim();
+                    break;
+                case 'director_name':
+                    conversationState.params.directorName = userInput;
+                    break;
             }
             
             await searchAndDisplayMovies();
@@ -444,7 +450,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 .filter(id => id != null)
             );
 
-            const apiUrl = buildTmdbUrl();
+            const apiUrl = await buildTmdbUrl();
+            if (!apiUrl) {
+                thinkingBubble.innerHTML = "監督が見つかりませんでした。";
+                showSearchModes();
+                return;
+            }
+
             const response = await fetch(apiUrl);
             if (!response.ok) {
                 thinkingBubble.innerHTML = "映画情報の取得に失敗しました。";
@@ -453,10 +465,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             const movies = data.results;
 
+            if (!movies || movies.length === 0) {
+                thinkingBubble.innerHTML = "条件に合う映画は見つかりませんでした。";
+                showSearchModes();
+                return;
+            }
+
             renderMovieSelectionTable(movies, existingIds, thinkingBubble);
         }
 
-        function buildTmdbUrl() {
+        async function buildTmdbUrl() {
             let endpoint = '';
             const params = new URLSearchParams({ api_key: TMDB_API_KEY, language: 'ja-JP' });
 
@@ -468,6 +486,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'upcoming':
                     endpoint = 'movie/upcoming';
                     params.append('region', conversationState.params.region || 'JP');
+                    break;
+                case 'discover':
+                    endpoint = 'discover/movie';
+                    if (conversationState.params.year) {
+                        params.append('primary_release_year', conversationState.params.year);
+                    }
+                    if (conversationState.params.keywords) {
+                        // ジャンル検索はID指定が正確だが、簡易的にキーワード検索を利用
+                        const keywordSearchUrl = `https://api.themoviedb.org/3/search/keyword?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(conversationState.params.keywords)}`;
+                        const keywordRes = await fetch(keywordSearchUrl);
+                        if(keywordRes.ok) {
+                            const keywordData = await keywordRes.json();
+                            if(keywordData.results.length > 0) {
+                                params.append('with_keywords', keywordData.results[0].id);
+                            }
+                        }
+                    }
+                    params.append('sort_by', 'popularity.desc');
+                    break;
+                case 'director':
+                    const personSearchUrl = `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(conversationState.params.directorName)}&language=ja-JP`;
+                    const personRes = await fetch(personSearchUrl);
+                    if (!personRes.ok) return null;
+                    const personData = await personRes.json();
+                    const directorId = personData.results[0]?.id;
+                    if (!directorId) return null;
+                    
+                    endpoint = 'discover/movie';
+                    params.append('with_crew', directorId);
+                    params.append('sort_by', 'popularity.desc');
                     break;
             }
             return `https://api.themoviedb.org/3/${endpoint}?${params.toString()}`;
@@ -644,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const detail = item.querySelector('.content-detail');
                     const menuContainer = detail.querySelector('#movie-menu-container');
                     detail.querySelector('#movie-content-area').innerHTML = '';
-                    menuContainer.style.display = 'grid'; // flexからgridに戻す
+                    menuContainer.style.display = 'grid';
                     menuContainer.removeAttribute('data-initialized');
                     isAppInitialized = false;
                     chatHistory = [];
@@ -653,6 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
