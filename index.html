@@ -52,11 +52,22 @@
             <div class="content-main">ゴルフ</div>
             <div class="content-detail"><h2>ゴルフ</h2><p>ベストスコア更新を目指して。</p></div>
         </div>
+        
+        <!-- ▼▼▼【ここを修正しました】▼▼▼ -->
         <div class="grid-item movie">
             <div class="content-main">映画</div>
-            <!-- この中にJSによって映画リストとチャットが生成されます -->
-            <div class="content-detail"></div>
+            <div class="content-detail">
+                <!-- ボタンを配置するコンテナ -->
+                <div id="movie-menu-container">
+                    <button id="show-search-button" class="movie-menu-button">映画を検索する</button>
+                    <button id="show-register-button" class="movie-menu-button">新しい映画を登録する</button>
+                </div>
+                <!-- 各機能のコンテンツがここに表示される -->
+                <div id="movie-content-area"></div>
+            </div>
         </div>
+        <!-- ▲▲▲【ここまで】▲▲▲ -->
+
         <div class="grid-item architecture">
             <div class="content-main">建築</div>
             <div class="content-detail"><h2>建築</h2><p>訪れた美しい建築の記録。</p></div>
@@ -77,5 +88,6 @@
 
 </body>
 </html>
+
 
 
