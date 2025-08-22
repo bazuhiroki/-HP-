@@ -363,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function showSearchModes() {
             const initialMessageBubble = displayMessage("新しい映画を探しましょう！<br>どのような切り口で探しますか？", 'ai', chatBox);
             const buttonContainer = document.createElement('div');
+            // ▼▼▼【修正点】特別なCSSクラスを付与 ▼▼▼
             buttonContainer.className = 'ai-button-container';
             const searchModes = [
                 { text: '🎬 公開中の映画', mode: 'now_playing' },
@@ -493,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         params.append('primary_release_year', conversationState.params.year);
                     }
                     if (conversationState.params.keywords) {
-                        // ジャンル検索はID指定が正確だが、簡易的にキーワード検索を利用
                         const keywordSearchUrl = `https://api.themoviedb.org/3/search/keyword?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(conversationState.params.keywords)}`;
                         const keywordRes = await fetch(keywordSearchUrl);
                         if(keywordRes.ok) {
@@ -701,6 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
