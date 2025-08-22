@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★後で設定★★★
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
@@ -306,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ▼▼▼【ここからが今回の主な修正箇所です】▼▼▼
     async function initializeMovieRegisterApp(container) {
         if (isAppInitialized) return;
         isAppInitialized = true;
@@ -463,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${movies.map(movie => `
                                 <tr>
                                     <td>
-                                        <input type="checkbox" data-movie-id="${movie.id}" 
+                                        <input type="checkbox" class="movie-checkbox" data-movie-id="${movie.id}" 
                                         ${existingIds.has(movie.id) ? 'disabled' : 'checked'}>
                                         ${existingIds.has(movie.id) ? '<span style="font-size:10px; color: green;">登録済</span>' : ''}
                                     </td>
@@ -479,12 +480,93 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             bubbleToUpdate.innerHTML = tableHtml;
             chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 「Notionに追加」ボタンにイベントリスナーを追加
+            const addButton = bubbleToUpdate.querySelector('#add-to-notion-button');
+            addButton.addEventListener('click', handleAddToNotion);
+        }
+
+        async function handleAddToNotion(e) {
+            const button = e.target;
+            button.textContent = '登録中...';
+            button.disabled = true;
+
+            const checkboxes = container.querySelectorAll('.movie-checkbox:checked');
+            const movieIdsToAdd = Array.from(checkboxes).map(cb => cb.dataset.movieId);
+
+            if (movieIdsToAdd.length === 0) {
+                displayMessage("追加する映画が選択されていません。", 'ai', chatBox);
+                button.textContent = '選択した映画をNotionに追加';
+                button.disabled = false;
+                return;
+            }
+            
+            displayMessage(`${movieIdsToAdd.length}件の映画をNotionに登録します...`, 'ai', chatBox);
+            
+            let successCount = 0;
+            for (const movieId of movieIdsToAdd) {
+                const success = await addSingleMovieToNotion(movieId);
+                if (success) {
+                    successCount++;
+                }
+                await new Promise(resolve => setTimeout(resolve, 350)); // Notion APIのレート制限対策
+            }
+
+            displayMessage(`${successCount}件の映画をウォッチリストに追加しました！`, 'ai', chatBox);
+            
+            // 続けて別の映画を探せるように、最初のモード選択に戻る
+            showSearchModes();
+        }
+
+        async function addSingleMovieToNotion(movieId) {
+            try {
+                // 1. TMDBから映画の詳細情報を取得 (クレジット情報も含む)
+                const detailUrl = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=ja-JP&append_to_response=credits`;
+                const detailRes = await fetch(detailUrl);
+                const movie = await detailRes.json();
+
+                // 2. Notionに登録するデータを作成
+                const director = movie.credits.crew.find(c => c.job === 'Director')?.name || '';
+                const writer = movie.credits.crew.find(c => c.job === 'Screenplay' || c.job === 'Writer')?.name || '';
+                const cast = movie.credits.cast.slice(0, 5).map(c => c.name).join(', ');
+
+                const notionPageData = {
+                    parent: { database_id: WATCHLIST_DB_ID },
+                    properties: {
+                        '名前': { title: [{ text: { content: movie.title } }] },
+                        'TMDB': { number: movie.id },
+                        'あらすじ': { rich_text: [{ text: { content: movie.overview.substring(0, 2000) } }] },
+                        'ジャンル': { multi_select: movie.genres.map(g => ({ name: g.name })) },
+                        '監督': { rich_text: [{ text: { content: director } }] },
+                        '脚本家': { rich_text: [{ text: { content: writer } }] },
+                        'キャスト': { rich_text: [{ text: { content: cast } }] },
+                        '視聴済': { checkbox: false }
+                        // ポスターと背景画像はURL形式では直接追加できないため、今回は省略
+                    }
+                };
+
+                // 3. Notion APIを呼び出してページを作成
+                const targetUrl = `https://api.notion.com/v1/pages`;
+                const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${NOTION_API_KEY}`, 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28' },
+                    body: JSON.stringify(notionPageData)
+                });
+                
+                return response.ok;
+
+            } catch (error) {
+                console.error(`Movie ID ${movieId} の登録中にエラー:`, error);
+                return false;
+            }
         }
 
         showSearchModes();
         sendButton.addEventListener('click', handleUserInput);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
     }
+    // ▲▲▲【ここまでが今回の主な修正箇所です】▲▲▲
 
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
@@ -535,6 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
