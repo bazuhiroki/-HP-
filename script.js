@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    const WATCHLIST_DB_ID = 'YOUR_NEW_WATCHLIST_DATABASE_ID'; // ★★★後で設定★★★
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'; // ★★★後で設定★★★
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
