@@ -324,72 +324,77 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatInput = container.querySelector('#register-chat-input');
         const sendButton = container.querySelector('#register-send-button');
 
-        // 1. AIからの最初のメッセージを表示
-        const initialMessageBubble = displayMessage("新しい映画を探しましょう！どのような切り口で探しますか？", 'ai', chatBox);
+        let currentSearchMode = null; // 現在の検索モードを保持する変数
 
-        // 2. 選択肢ボタンのコンテナを作成
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.marginTop = '10px';
-        
-        const searchModes = [
-            { text: '🎬 公開中の映画を探す', mode: 'now_playing' },
-            { text: '✨ 最近公開された映画を探す', mode: 'recent' },
-            { text: '📚 年代やジャンルで探す', mode: 'discover' },
-            { text: '🎥 監督名で探す', mode: 'director' }
-        ];
-
-        // 3. 各ボタンを作成してコンテナに追加
-        searchModes.forEach(modeInfo => {
-            const button = document.createElement('button');
-            button.textContent = modeInfo.text;
-            button.className = 'ai-button'; // 既存のボタンスタイルを流用
-            button.style.marginRight = '5px';
-            button.style.marginBottom = '5px';
-            button.dataset.mode = modeInfo.mode;
-            buttonContainer.appendChild(button);
-        });
-
-        // 4. ボタンコンテナをAIの吹き出しの下に追加
-        initialMessageBubble.appendChild(buttonContainer);
-
-        // 5. ボタンがクリックされたときの処理
-        buttonContainer.addEventListener('click', (e) => {
-            if (e.target.matches('.ai-button')) {
-                const selectedMode = e.target.dataset.mode;
-                // ユーザーがボタンを押したことをチャットに表示
-                displayMessage(e.target.textContent, 'user', chatBox);
-                // ボタンを非表示にする
-                buttonContainer.style.display = 'none';
-                
-                // 次のステップ（AIの追加質問など）に進む
-                handleSearchModeSelection(selectedMode, chatBox);
-            }
-        });
-    }
-
-    // 検索モードが選択された後の処理を担う関数
-    function handleSearchModeSelection(mode, chatBox) {
-        // ここで、選択されたモードに応じてAIが次の質問をします。
-        // この部分は次回以降で実装していきます。
-        let nextQuestion = '';
-        switch (mode) {
-            case 'now_playing':
-                nextQuestion = '「公開中の映画」ですね。邦画と洋画、どちらがよろしいですか？';
-                break;
-            case 'recent':
-                nextQuestion = '「最近公開された映画」ですね。こちらも邦画と洋画、どちらにしましょう？';
-                break;
-            case 'discover':
-                nextQuestion = '「年代やジャンル」で探しましょう。ご希望の年代とジャンルを教えてください。（例: 1990年代、SF）';
-                break;
-            case 'director':
-                nextQuestion = '「監督名」で検索しますね。お好きな監督の名前を教えてください。';
-                break;
+        function showSearchModes() {
+            const initialMessageBubble = displayMessage("新しい映画を探しましょう！どのような切り口で探しますか？", 'ai', chatBox);
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.marginTop = '10px';
+            const searchModes = [
+                { text: '🎬 公開中の映画を探す', mode: 'now_playing' },
+                { text: '✨ 最近公開された映画を探す', mode: 'recent' },
+                { text: '📚 年代やジャンルで探す', mode: 'discover' },
+                { text: '🎥 監督名で探す', mode: 'director' }
+            ];
+            searchModes.forEach(modeInfo => {
+                const button = document.createElement('button');
+                button.textContent = modeInfo.text;
+                button.className = 'ai-button';
+                button.style.marginRight = '5px';
+                button.style.marginBottom = '5px';
+                button.dataset.mode = modeInfo.mode;
+                buttonContainer.appendChild(button);
+            });
+            initialMessageBubble.appendChild(buttonContainer);
+            buttonContainer.addEventListener('click', (e) => {
+                if (e.target.matches('.ai-button')) {
+                    const selectedMode = e.target.dataset.mode;
+                    displayMessage(e.target.textContent, 'user', chatBox);
+                    buttonContainer.style.display = 'none';
+                    handleSearchModeSelection(selectedMode);
+                }
+            });
         }
-        displayMessage(nextQuestion, 'ai', chatBox);
+
+        function handleSearchModeSelection(mode) {
+            currentSearchMode = mode; // 選択されたモードを記憶
+            let nextQuestion = '';
+            switch (mode) {
+                case 'now_playing': nextQuestion = '「公開中の映画」ですね。邦画と洋画、どちらがよろしいですか？'; break;
+                case 'recent': nextQuestion = '「最近公開された映画」ですね。こちらも邦画と洋画、どちらにしましょう？'; break;
+                case 'discover': nextQuestion = '「年代やジャンル」で探しましょう。ご希望の年代とジャンルを教えてください。（例: 1990年代、SF）'; break;
+                case 'director': nextQuestion = '「監督名」で検索しますね。お好きな監督の名前を教えてください。'; break;
+            }
+            displayMessage(nextQuestion, 'ai', chatBox);
+            chatInput.focus(); // ユーザーが入力できるようにフォーカス
+        }
+
+        async function handleUserInput() {
+            const userInput = chatInput.value.trim();
+            if (!userInput) return;
+
+            displayMessage(userInput, 'user', chatBox);
+            chatInput.value = '';
+            
+            // AIが考え中であることを示す
+            displayMessage("...", 'ai', chatBox);
+
+            // ここで、currentSearchModeとuserInputを使ってTMDBを検索する処理を呼び出す
+            // 今回はまだ検索せず、AIが応答するだけ
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待つ
+            const lastBubble = chatBox.lastChild;
+            lastBubble.querySelector('.chat-bubble-ai').innerHTML = `「${userInput}」ですね。承知いたしました。<br>（ここにTMDBの検索結果を表示する処理を実装します）`;
+        }
+
+        // --- 初期化処理の実行 ---
+        showSearchModes();
+
+        sendButton.addEventListener('click', handleUserInput);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleUserInput();
+        });
     }
     // ▲▲▲【ここまでが今回の主な修正箇所です】▲▲▲
-
 
     function initializeMovieMenu(container) {
         const menuContainer = container.querySelector('#movie-menu-container');
