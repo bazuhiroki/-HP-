@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion TMDB ID 移行ツール</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f4f4f4; }
+        h1 { text-align: center; color: #333; }
+        button { display: block; width: 100%; padding: 15px; font-size: 18px; color: white; background-color: #007bff; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { margin-top: 20px; background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 15px; height: 400px; overflow-y: scroll; white-space: pre-wrap; font-family: monospace; }
+        .log-success { color: green; }
+        .log-error { color: red; }
+        .log-info { color: blue; }
+    </style>
+</head>
+<body>
+
+    <h1>Notion TMDB ID 移行ツール</h1>
+    <p>このツールは、「アカデミー賞」データベース内の映画にTMDB IDを自動で割り振ります。<br><strong>注意:</strong> この処理は一度だけ実行してください。処理中はブラウザを閉じないでください。</p>
+    <button id="startButton">ID振り直しを開始</button>
+    <div id="status">ここに処理状況が表示されます...</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startButton = document.getElementById('startButton');
+            const statusDiv = document.getElementById('status');
+
+            // --- ご自身のAPIキーとデータベースIDを設定してください ---
+            const NOTION_API_KEY = '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';
+            const MOVIE_DATABASE_ID = 'b3c72857276f4ca9a3c99b94ba910b53'; // アカデミー賞データベースのID
+            const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
+            const CORS_PROXY_URL = 'https://corsproxy.io/?';
+
+            function log(message, type = '') {
+                const p = document.createElement('p');
+                p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                if (type) {
+                    p.className = `log-${type}`;
+                }
+                statusDiv.appendChild(p);
+                statusDiv.scrollTop = statusDiv.scrollHeight;
+            }
+
+            async function startMigration() {
+                startButton.disabled = true;
+                startButton.textContent = '処理を実行中...';
+                log('移行プロセスを開始します。', 'info');
+
+                try {
+                    // 1. NotionからTMDB_IDが未設定の映画をすべて取得
+                    log('NotionからTMDB_IDが未設定の映画を取得中...');
+                    const moviesToUpdate = await fetchMoviesWithoutTmdbId();
+                    
+                    if (moviesToUpdate.length === 0) {
+                        log('TMDB_IDが未設定の映画はありませんでした。処理を終了します。', 'success');
+                        startButton.textContent = '完了';
+                        return;
+                    }
+                    
+                    log(`${moviesToUpdate.length}件の映画を更新します。`, 'info');
+
+                    // 2. 1件ずつ処理
+                    for (let i = 0; i < moviesToUpdate.length; i++) {
+                        const movie = moviesToUpdate[i];
+                        log(`(${i + 1}/${moviesToUpdate.length}) 「${movie.title}」の処理を開始...`);
+
+                        // 3. TMDBで映画を検索してIDを取得
+                        const tmdbId = await searchTmdbId(movie.title);
+
+                        if (tmdbId) {
+                            log(`  > TMDB IDが見つかりました: ${tmdbId}`, 'success');
+                            // 4. Notionページを更新
+                            const success = await updateNotionPage(movie.pageId, tmdbId);
+                            if (success) {
+                                log(`  > Notionページの更新に成功しました。`, 'success');
+                            } else {
+                                log(`  > Notionページの更新に失敗しました。`, 'error');
+                            }
+                        } else {
+                            log(`  > TMDBで「${movie.title}」が見つかりませんでした。スキップします。`, 'error');
+                        }
+                        
+                        // APIのレートリミットを避けるために少し待つ
+                        await new Promise(resolve => setTimeout(resolve, 500)); 
+                    }
+
+                    log('すべての処理が完了しました！', 'success');
+                    startButton.textContent = '移行完了';
+
+                } catch (error) {
+                    log(`致命的なエラーが発生しました: ${error.message}`, 'error');
+                    startButton.textContent = 'エラーが発生しました';
+                    startButton.disabled = false;
+                }
+            }
+
+            async function fetchMoviesWithoutTmdbId() {
+                const targetUrl = `https://api.notion.com/v1/databases/${MOVIE_DATABASE_ID}/query`;
+                const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
+                const body = {
+                    filter: {
+                        property: "TMDB_ID", // ご自身のプロパティ名に合わせてください
+                        number: {
+                            is_empty: true
+                        }
+                    }
+                };
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${NOTION_API_KEY}`, 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error('Notionからのデータ取得に失敗しました。');
+                const data = await response.json();
+                return data.results.map(page => ({
+                    pageId: page.id,
+                    title: page.properties['名前']?.title[0]?.plain_text || 'タイトル不明'
+                }));
+            }
+
+            async function searchTmdbId(title) {
+                if (!title || title === 'タイトル不明') return null;
+                try {
+                    const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}&language=ja-JP`;
+                    const searchRes = await fetch(searchUrl);
+                    if (!searchRes.ok) return null;
+                    const searchData = await searchRes.json();
+                    return searchData.results[0]?.id || null;
+                } catch (error) {
+                    console.error('TMDB検索エラー:', error);
+                    return null;
+                }
+            }
+
+            async function updateNotionPage(pageId, tmdbId) {
+                const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
+                const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
+                const body = {
+                    properties: {
+                        "TMDB_ID": { // ご自身のプロパティ名に合わせてください
+                            number: tmdbId
+                        }
+                    }
+                };
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${NOTION_API_KEY}`, 'Content-Type': 'application/json', 'Notion-Version': '2022-06-28' },
+                        body: JSON.stringify(body)
+                    });
+                    return response.ok;
+                } catch (error) {
+                    console.error('Notion更新エラー:', error);
+                    return false;
+                }
+            }
+
+            startButton.addEventListener('click', startMigration);
+        });
+    </script>
+
+</body>
+</html>
