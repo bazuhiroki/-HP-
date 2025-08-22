@@ -33,6 +33,9 @@
             const MOVIE_DATABASE_ID = 'b3c72857276f4ca9a3c99b94ba910b53'; // アカデミー賞データベースのID
             const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
             const CORS_PROXY_URL = 'https://corsproxy.io/?';
+            
+            // ▼▼▼【重要】Notionからコピーしたプロパティ名をここに貼り付け ▼▼▼
+            const TMDB_ID_PROPERTY_NAME = "TMDB"; 
 
             function log(message, type = '') {
                 const p = document.createElement('p');
@@ -50,29 +53,25 @@
                 log('移行プロセスを開始します。', 'info');
 
                 try {
-                    // 1. NotionからTMDB_IDが未設定の映画をすべて取得
-                    log('NotionからTMDB_IDが未設定の映画を取得中...');
+                    log('NotionからTMDB IDが未設定の映画を取得中...');
                     const moviesToUpdate = await fetchMoviesWithoutTmdbId();
                     
                     if (moviesToUpdate.length === 0) {
-                        log('TMDB_IDが未設定の映画はありませんでした。処理を終了します。', 'success');
+                        log('TMDB IDが未設定の映画はありませんでした。処理を終了します。', 'success');
                         startButton.textContent = '完了';
                         return;
                     }
                     
                     log(`${moviesToUpdate.length}件の映画を更新します。`, 'info');
 
-                    // 2. 1件ずつ処理
                     for (let i = 0; i < moviesToUpdate.length; i++) {
                         const movie = moviesToUpdate[i];
                         log(`(${i + 1}/${moviesToUpdate.length}) 「${movie.title}」の処理を開始...`);
 
-                        // 3. TMDBで映画を検索してIDを取得
                         const tmdbId = await searchTmdbId(movie.title);
 
                         if (tmdbId) {
                             log(`  > TMDB IDが見つかりました: ${tmdbId}`, 'success');
-                            // 4. Notionページを更新
                             const success = await updateNotionPage(movie.pageId, tmdbId);
                             if (success) {
                                 log(`  > Notionページの更新に成功しました。`, 'success');
@@ -83,7 +82,6 @@
                             log(`  > TMDBで「${movie.title}」が見つかりませんでした。スキップします。`, 'error');
                         }
                         
-                        // APIのレートリミットを避けるために少し待つ
                         await new Promise(resolve => setTimeout(resolve, 500)); 
                     }
 
@@ -102,7 +100,7 @@
                 const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
                 const body = {
                     filter: {
-                        property: "TMDB", // ご自身のプロパティ名に合わせてください
+                        property: TMDB_ID_PROPERTY_NAME, // ★変数を使用するように変更
                         number: {
                             is_empty: true
                         }
@@ -140,7 +138,7 @@
                 const apiUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
                 const body = {
                     properties: {
-                        "TMDB": { // ご自身のプロパティ名に合わせてください
+                        [TMDB_ID_PROPERTY_NAME]: { // ★変数を使用するように変更
                             number: tmdbId
                         }
                     }
@@ -164,3 +162,4 @@
 
 </body>
 </html>
+
