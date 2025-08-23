@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 基本設定 ---
     const NOTION_API_KEY = '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';
     const ACADEMY_DB_ID = 'b3c72857276f4ca9a3c99b94ba910b53';
-    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89'
+    const WATCHLIST_DB_ID = '257fba1c4ef18032a421fb487fc4ff89';
     const TMDB_API_KEY = '9581389ef7dc448dc8b17ea22a930bf3';
     const GEMINI_API_KEY = 'AIzaSyCVo6Wu77DJryjPh3tNtBQzvtgMnrIJBYA';
     const CORS_PROXY_URL = 'https://corsproxy.io/?';
@@ -29,8 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             document.execCommand('copy');
             if (button) {
-                button.textContent = '✅ コピー完了';
-                setTimeout(() => { button.textContent = 'タイトルをコピー'; }, 1500);
+                const originalText = button.innerHTML;
+                button.innerHTML = '✅ コピー完了';
+                button.classList.add('copied');
+                setTimeout(() => { 
+                    button.innerHTML = originalText;
+                    button.classList.remove('copied');
+                }, 1500);
             }
         } catch (err) { console.error('テキストのコピーに失敗しました: ', err); }
         document.body.removeChild(textArea);
@@ -210,12 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', () => {
                 filterButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-
                 const filter = button.dataset.filter;
                 const filteredMovies = (filter === 'all')
                     ? moviesWithProviders
                     : moviesWithProviders.filter(movie => movie.source === filter);
-                
                 renderMovieLists(filteredMovies, listArea);
             });
         });
@@ -227,20 +230,29 @@ document.addEventListener('DOMContentLoaded', () => {
             chatInput.value = '';
             const viewIntentKeywords = ['見る', 'みたい', '視聴'];
             const isViewIntent = viewIntentKeywords.some(keyword => userInput.toLowerCase().includes(keyword));
+            
             if (isViewIntent && currentMovieContext) {
-                let responseHtml = `「${currentMovieContext.title}」ですね。<br>`;
-                if (currentMovieContext.url) {
-                    responseHtml += `<a href="${currentMovieContext.url}" target="_blank" class="ai-link">視聴ページへ</a>`;
-                } else {
-                    responseHtml += `申し訳ありません、視聴URLは未登録でした。<br>` +
-                                    `<button class="ai-button copy-ai-title" data-title="${currentMovieContext.title}">タイトルをコピー</button>` +
-                                    `<a href="https://filmarks.com/search/movies?q=${encodeURIComponent(currentMovieContext.title)}" target="_blank" class="ai-link">Filmarksで探す</a>`;
-                }
-                responseHtml += `<button class="ai-button watched-button" data-page-id="${currentMovieContext.pageId}">視聴済みにする</button>`;
-                displayMessage(responseHtml, 'ai', chatBox);
+                const bubble = displayMessage(`「${currentMovieContext.title}」ですね。どうしますか？`, 'ai', chatBox);
+                const responseHtml = `
+                    <div class="ai-action-card">
+                        <div class="ai-action-main">
+                            <button class="ai-action-button copy-title-button" data-title="${currentMovieContext.title}">
+                                <span class="icon">📋</span> タイトルをコピー
+                            </button>
+                            <a href="https://filmarks.com/search/movies?q=${encodeURIComponent(currentMovieContext.title)}" target="_blank" class="ai-action-button">
+                                <span class="icon">🎬</span> Filmarksで探す
+                            </a>
+                        </div>
+                        <button class="ai-action-secondary watched-button" data-page-id="${currentMovieContext.pageId}">
+                            ✅ 視聴済みにする
+                        </button>
+                    </div>
+                `;
+                bubble.innerHTML += responseHtml;
                 currentMovieContext = null;
                 return;
             }
+
             sendButton.disabled = true;
             const thinkingWrapper = document.createElement('div');
             thinkingWrapper.className = 'chat-bubble-wrapper ai';
@@ -252,26 +264,18 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (!isViewIntent) {
                 currentMovieContext = null;
             }
+            
+            // Gemini APIを呼び出す前に、システムプロンプトを更新
+            const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
+            const currentSystemPrompt = `あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。# あなたが持っている情報: ${allMoviesData.map(m => `"${m.title}"(${m.isWatched ? '視聴済み' : '未視聴'})`).join(', ')} # あなたの行動ルール: 1. 映画の特定と確認: ユーザーの発言がリスト内の映画に言及している場合、簡潔に紹介し「詳しく知りたいですか？視聴しますか？」と尋ねる。 2. おすすめの提案: 「おすすめは？」と聞かれたら、「未視聴」の映画を1つだけ選び、「『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '未視聴映画なし'}』はいかがでしょう？[推薦理由]」のように提案する。 3. 雑談: 上記以外は自由に会話する。`;
+            chatHistory = [ { role: "user", parts: [{ text: currentSystemPrompt }] }, { role: "model", parts: [{ text: "承知いたしました。" }] } ];
+
             const aiResponse = await callGeminiAPI(userInput);
             thinkingWrapper.remove();
             displayMessage(aiResponse, 'ai', chatBox);
             sendButton.disabled = false;
             chatInput.focus();
         }
-
-        const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
-        const initialSystemPrompt = `
-あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。
-# あなたが持っている情報: ${allMoviesData.map(m => `"${m.title}"(${m.isWatched ? '視聴済み' : '未視聴'})`).join(', ')}
-# あなたの行動ルール
-1. 映画の特定と確認: ユーザーの発言がリスト内の映画に言及している場合、簡潔に紹介し「詳しく知りたいですか？視聴しますか？」と尋ねる。
-2. おすすめの提案: 「おすすめは？」と聞かれたら、「未視聴」の映画を1つだけ選び、「『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '未視聴映画なし'}』はいかがでしょう？[推薦理由]」のように提案する。
-3. 雑談: 上記以外は自由に会話する。`;
-        
-        chatHistory = [
-            { role: "user", parts: [{ text: initialSystemPrompt }] },
-            { role: "model", parts: [{ text: "承知いたしました。映画コンシェルジュとして、ご案内します。" }] }
-        ];
 
         const initialAiMessage = "今日は何を見ますか？リストの映画をクリックするか、タイトルを入力してください。";
         displayMessage(initialAiMessage, 'ai', chatBox);
@@ -291,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         chatBox.addEventListener('click', async (e) => {
-            if (e.target.matches('.copy-ai-title')) {
+            if (e.target.matches('.copy-title-button')) {
                 copyToClipboard(e.target.dataset.title, e.target);
                 return;
             }
@@ -314,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ▼▼▼【ここからが新しい対話型AIの実装です】▼▼▼
     async function initializeMovieRegisterApp(container) {
         if (isAppInitialized) return;
         isAppInitialized = true;
@@ -332,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatInput = container.querySelector('#register-chat-input');
         const sendButton = container.querySelector('#register-send-button');
 
-        // --- AIに与える「道具（ツール）」の定義 ---
         const tools = {
             functionDeclarations: [
                 {
@@ -353,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         };
 
-        // --- AIの思考回路（システムプロンプト）---
         const systemPrompt = `あなたは、ユーザーがまだ観たことのない素晴らしい映画を見つける手助けをする、非常に優秀でフレンドリーな「映画コンシェルジュAI」です。
         
         # あなたの役割と行動ルール:
@@ -369,7 +370,6 @@ document.addEventListener('DOMContentLoaded', () => {
             { role: "model", parts: [{ text: "承知いたしました。最高の映画パートナーとして、ご案内します！" }] }
         ];
 
-        // --- メインの対話処理 ---
         async function handleUserInput() {
             const userInput = chatInput.value.trim();
             if (!userInput) return;
@@ -381,13 +381,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const thinkingBubble = displayMessage("...", 'ai', chatBox);
             
-            // ユーザーの入力を会話履歴に追加
             chatHistory.push({ role: "user", parts: [{ text: userInput }] });
 
-            // Gemini APIを呼び出し
             const response = await callGeminiAPIWithTools();
 
-            // AIの応答を処理
             if (response.functionCall) {
                 const functionCall = response.functionCall;
                 const functionName = functionCall.name;
@@ -397,18 +394,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     thinkingBubble.innerHTML = "TMDBで映画を検索しています...";
                     const searchResult = await searchAndDisplayMovies(args);
                     
-                    // 関数の実行結果を会話履歴に追加
                     chatHistory.push({
                         role: "tool",
                         parts: [{ functionResponse: { name: "search_movies_from_tmdb", response: { result: searchResult } } }]
                     });
 
-                    // 実行結果を元に、AIに最終的な返答を生成させる
                     const finalResponse = await callGeminiAPIWithTools();
-                    thinkingBubble.innerHTML = finalResponse.text;
+                    thinkingBubble.innerHTML = finalResponse.text.replace(/\n/g, '<br>');
                 }
             } else {
-                // 通常のテキスト応答
                 thinkingBubble.innerHTML = response.text.replace(/\n/g, '<br>');
             }
 
@@ -417,7 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
             chatInput.focus();
         }
         
-        // --- Gemini API呼び出し（ツール使用版） ---
         async function callGeminiAPIWithTools() {
             const modelName = 'gemini-1.5-flash-latest';
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
@@ -434,7 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const candidate = data.candidates[0];
                 const part = candidate.content.parts[0];
                 
-                // AIの応答を会話履歴に追加
                 chatHistory.push(candidate.content);
 
                 if (part.functionCall) {
@@ -449,7 +441,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // --- ツールとして呼び出される関数 ---
         async function searchAndDisplayMovies(args) {
             const academyPages = await fetchNotionPages(ACADEMY_DB_ID);
             const watchlistPages = await fetchNotionPages(WATCHLIST_DB_ID);
@@ -631,7 +622,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // --- 初期化処理の実行 ---
         displayMessage("こんにちは！何かお探しの映画はありますか？<br>「感動する映画」のように、気分を伝えてくれてもいいですよ。", 'ai', chatBox);
         chatInput.disabled = false;
         sendButton.disabled = false;
@@ -690,6 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
