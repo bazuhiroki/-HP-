@@ -101,6 +101,29 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error("Notion更新エラー:", error); return false; }
     }
 
+    async function callGeminiAPI(prompt) {
+        if (!GEMINI_API_KEY) return "エラー: Gemini APIキーが設定されていません。";
+        const modelName = 'gemini-1.5-flash-latest';
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: chatHistory })
+            });
+            if (!response.ok) throw new Error("Gemini API request failed");
+            const data = await response.json();
+            const aiResponse = data.candidates[0].content.parts[0].text;
+            chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+            return aiResponse;
+        } catch (error) {
+            console.error("Gemini API Fetch Error:", error);
+            chatHistory.pop();
+            return "AIとの通信でエラーが発生しました。";
+        }
+    }
+
     // --- 描画関連の関数 ---
     function renderMovieLists(movies, container) {
         const groupedByProvider = {};
@@ -265,20 +288,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentMovieContext = null;
             }
             
-            // Gemini APIを呼び出す前に、システムプロンプトを更新
-            const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
-            const currentSystemPrompt = `あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。# あなたが持っている情報: ${allMoviesData.map(m => `"${m.title}"(${m.isWatched ? '視聴済み' : '未視聴'})`).join(', ')} # あなたの行動ルール: 1. 映画の特定と確認: ユーザーの発言がリスト内の映画に言及している場合、簡潔に紹介し「詳しく知りたいですか？視聴しますか？」と尋ねる。 2. おすすめの提案: 「おすすめは？」と聞かれたら、「未視聴」の映画を1つだけ選び、「『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '未視聴映画なし'}』はいかがでしょう？[推薦理由]」のように提案する。 3. 雑談: 上記以外は自由に会話する。`;
-            chatHistory = [ { role: "user", parts: [{ text: currentSystemPrompt }] }, { role: "model", parts: [{ text: "承知いたしました。" }] } ];
-
             const aiResponse = await callGeminiAPI(userInput);
+            
             thinkingWrapper.remove();
-            displayMessage(aiResponse, 'ai', chatBox);
+            // displayMessageはcallGeminiAPI内で履歴に追加済のため不要
+            const lastBubble = chatBox.lastChild;
+            if (lastBubble && lastBubble.classList.contains('user')) {
+                 displayMessage(aiResponse, 'ai', chatBox);
+            } else {
+                 lastBubble.querySelector('.chat-bubble-ai').innerHTML = aiResponse.replace(/\n/g, '<br>');
+            }
+
             sendButton.disabled = false;
             chatInput.focus();
         }
 
+        const unWatchedMovies = allMoviesData.filter(m => !m.isWatched);
+        const initialSystemPrompt = `あなたは知識豊富でフレンドリーな映画コンシェルジュAIです。# あなたが持っている情報: ${allMoviesData.map(m => `"${m.title}"(${m.isWatched ? '視聴済み' : '未視聴'})`).join(', ')} # あなたの行動ルール: 1. 映画の特定と確認: ユーザーの発言がリスト内の映画に言及している場合、簡潔に紹介し「詳しく知りたいですか？視聴しますか？」と尋ねる。 2. おすすめの提案: 「おすすめは？」と聞かれたら、「未視聴」の映画を1つだけ選び、「『${unWatchedMovies.length > 0 ? unWatchedMovies[0].title : '未視聴映画なし'}』はいかがでしょう？[推薦理由]」のように提案する。 3. 雑談: 上記以外は自由に会話する。`;
+        chatHistory = [
+            { role: "user", parts: [{ text: initialSystemPrompt }] },
+            { role: "model", parts: [{ text: "承知いたしました。映画コンシェルジュとして、ご案内します。" }] }
+        ];
+
         const initialAiMessage = "今日は何を見ますか？リストの映画をクリックするか、タイトルを入力してください。";
         displayMessage(initialAiMessage, 'ai', chatBox);
+        chatHistory.push({ role: "model", parts: [{ text: initialAiMessage }] });
         sendButton.disabled = false;
 
         sendButton.addEventListener('click', handleUserInput);
@@ -490,6 +524,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!directorId) return null;
                         params.append('with_crew', directorId);
                     }
+                    if (args.genre_keywords) {
+                        params.append('with_keywords', args.genre_keywords);
+                    }
                     params.append('sort_by', 'popularity.desc');
                     break;
             }
@@ -680,6 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
 
 
 
