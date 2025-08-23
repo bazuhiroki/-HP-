@@ -352,10 +352,57 @@ body {
 .movie-card.watched { background-color: #e9ecef; opacity: 0.7; }
 .movie-card.watched .movie-card-title { text-decoration: line-through; color: #6c757d; }
 .watched-badge { font-size: 11px; color: var(--success-color); font-weight: bold; display: block; margin-top: 4px; }
-.copy-ai-title { background-color: #007bff; }
-.copy-ai-title:hover { background-color: #0056b3; }
-.ai-link { color: #007bff; text-decoration: none; }
-.ai-link:hover { text-decoration: underline; }
+
+.ai-action-card {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-top: 10px;
+    box-shadow: var(--shadow-sm);
+}
+.ai-action-main {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+}
+.ai-action-button {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.ai-action-button:hover {
+    background-color: #293f5a;
+    transform: translateY(-2px);
+}
+.ai-action-button.copied {
+    background-color: var(--success-color);
+}
+.ai-action-secondary {
+    width: 100%;
+    background-color: transparent;
+    color: var(--text-light);
+    border: none;
+    border-top: 1px solid var(--border-color);
+    padding: 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.ai-action-secondary:hover {
+    background-color: #f8f9fa;
+}
 
 /* --- スマートフォン対応 --- */
 @media (max-width: 768px) {
