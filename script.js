@@ -102,10 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function callGeminiAPI(prompt) {
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
         if (!GEMINI_API_KEY) return "エラー: Gemini APIキーが設定されていません。";
         const modelName = 'gemini-1.5-flash-latest';
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
-        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -291,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const aiResponse = await callGeminiAPI(userInput);
             
             thinkingWrapper.remove();
-            // displayMessageはcallGeminiAPI内で履歴に追加済のため不要
             const lastBubble = chatBox.lastChild;
             if (lastBubble && lastBubble.classList.contains('user')) {
                  displayMessage(aiResponse, 'ai', chatBox);
@@ -360,8 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="register-chat-section" class="register-chat-section">
                 <div id="register-chat-box" class="register-chat-box"></div>
                 <div class="chat-input-area">
-                    <input type="text" id="register-chat-input" placeholder="メッセージを入力...">
-                    <button id="register-send-button">➤</button>
+                    <input type="text" id="register-chat-input" placeholder="メッセージを入力..." disabled>
+                    <button id="register-send-button" disabled>➤</button>
                 </div>
             </div>`;
         
@@ -369,40 +368,63 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatInput = container.querySelector('#register-chat-input');
         const sendButton = container.querySelector('#register-send-button');
 
-        const tools = {
-            functionDeclarations: [
-                {
-                    name: "search_movies_from_tmdb",
-                    description: "ユーザーとの会話で特定された条件に基づいて、TMDBから映画を検索します。",
-                    parameters: {
-                        type: "OBJECT",
-                        properties: {
-                            query_type: { type: "STRING", description: "検索の種類。'now_playing', 'upcoming', 'discover'のいずれか。" },
-                            region: { type: "STRING", description: "地域コード。日本の場合は'JP'。" },
-                            year: { type: "NUMBER", description: "公開年。"},
-                            genre_keywords: { type: "STRING", description: "ジャンルを示すキーワード（例: SF, アクション）。" },
-                            director_name: { type: "STRING", description: "監督名。" }
-                        },
-                        required: ["query_type"]
-                    }
-                }
-            ]
+        const conversationState = {
+            mode: null,
+            step: 'mode_selection',
+            params: {}
         };
 
-        const systemPrompt = `あなたは、ユーザーがまだ観たことのない素晴らしい映画を見つける手助けをする、非常に優秀でフレンドリーな「映画コンシェルジュAI」です。
-        
-        # あなたの役割と行動ルール:
-        - あなたの最終目標は、ユーザーとの自然な会話を通じて、ユーザーが興味を持つであろう映画のリストを提示し、ウォッチリストに追加してもらうことです。
-        - 決して事務的な一問一答にならないでください。まるで映画好きな友人と雑談するように、会話を広げ、提案し、ユーザーの曖昧な言葉から意図を汲み取ってください。
-        - ユーザーが「有名な監督を教えて」「泣ける映画のジャンルは？」のような具体的な知識を求めてきた場合は、あなたの知識を使って自由に答えてあげてください。
-        - 会話の中で、ユーザーが観たい映画の条件（ジャンル、年代、監督名など）が十分に固まったと判断したら、**必ず search_movies_from_tmdb ツールを呼び出して**ください。
-        - ツールを呼び出した後は、その結果（「〇件の映画が見つかりました」など）をユーザーに伝え、表示されたリストを確認するように促してください。
-        `;
+        function showSearchModes() {
+            const initialMessageBubble = displayMessage("新しい映画を探しましょう！<br>どのような切り口で探しますか？", 'ai', chatBox);
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'ai-button-container';
+            const searchModes = [
+                { text: '🎬 公開中の映画', mode: 'now_playing' },
+                { text: '✨ これから公開の映画', mode: 'upcoming' },
+                { text: '📚 年代やジャンル', mode: 'discover' },
+                { text: '🎥 監督名', mode: 'director' }
+            ];
+            searchModes.forEach(modeInfo => {
+                const button = document.createElement('button');
+                button.textContent = modeInfo.text;
+                button.className = 'ai-button';
+                button.dataset.mode = modeInfo.mode;
+                buttonContainer.appendChild(button);
+            });
+            initialMessageBubble.appendChild(buttonContainer);
+            buttonContainer.addEventListener('click', (e) => {
+                if (e.target.matches('.ai-button')) {
+                    const selectedMode = e.target.dataset.mode;
+                    displayMessage(e.target.textContent, 'user', chatBox);
+                    buttonContainer.style.display = 'none';
+                    handleModeSelection(selectedMode);
+                }
+            });
+        }
 
-        chatHistory = [
-            { role: "user", parts: [{ text: systemPrompt }] },
-            { role: "model", parts: [{ text: "承知いたしました。最高の映画パートナーとして、ご案内します！" }] }
-        ];
+        function handleModeSelection(mode) {
+            conversationState.mode = mode;
+            let nextQuestion = '';
+            switch (mode) {
+                case 'now_playing':
+                case 'upcoming':
+                    conversationState.step = 'region_selection';
+                    nextQuestion = '邦画と洋画、どちらがよろしいですか？';
+                    break;
+                case 'discover':
+                    conversationState.step = 'discover_params';
+                    nextQuestion = 'ご希望の年代とジャンルを教えてください。<br>（例: 1990年代 SF）';
+                    break;
+                case 'director':
+                    conversationState.step = 'director_name';
+                    nextQuestion = 'お好きな監督の名前を教えてください。';
+                    break;
+            }
+            displayMessage(nextQuestion, 'ai', chatBox);
+            chatInput.disabled = false;
+            sendButton.disabled = false;
+            chatInput.focus();
+        }
 
         async function handleUserInput() {
             const userInput = chatInput.value.trim();
@@ -412,121 +434,99 @@ document.addEventListener('DOMContentLoaded', () => {
             chatInput.value = '';
             chatInput.disabled = true;
             sendButton.disabled = true;
-            
-            const thinkingBubble = displayMessage("...", 'ai', chatBox);
-            
-            chatHistory.push({ role: "user", parts: [{ text: userInput }] });
 
-            const response = await callGeminiAPIWithTools();
-
-            if (response.functionCall) {
-                const functionCall = response.functionCall;
-                const functionName = functionCall.name;
-                const args = functionCall.args;
-
-                if (functionName === "search_movies_from_tmdb") {
-                    thinkingBubble.innerHTML = "TMDBで映画を検索しています...";
-                    const searchResult = await searchAndDisplayMovies(args);
-                    
-                    chatHistory.push({
-                        role: "tool",
-                        parts: [{ functionResponse: { name: "search_movies_from_tmdb", response: { result: searchResult } } }]
-                    });
-
-                    const finalResponse = await callGeminiAPIWithTools();
-                    thinkingBubble.innerHTML = finalResponse.text.replace(/\n/g, '<br>');
-                }
-            } else {
-                thinkingBubble.innerHTML = response.text.replace(/\n/g, '<br>');
+            switch (conversationState.step) {
+                case 'region_selection':
+                    conversationState.params.region = userInput.includes('邦画') ? 'JP' : 'US';
+                    break;
+                case 'discover_params':
+                    const yearMatch = userInput.match(/(\d{4})/);
+                    conversationState.params.year = yearMatch ? yearMatch[1] : null;
+                    conversationState.params.genreKeywords = userInput.replace(/(\d{4}年代?)/, '').trim();
+                    break;
+                case 'director_name':
+                    conversationState.params.directorName = userInput;
+                    break;
             }
-
-            chatInput.disabled = false;
-            sendButton.disabled = false;
-            chatInput.focus();
-        }
-        
-        async function callGeminiAPIWithTools() {
-            const modelName = 'gemini-1.5-flash-latest';
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
             
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: chatHistory, tools: [tools] })
-                });
-                if (!response.ok) throw new Error("Gemini API request failed");
-                const data = await response.json();
-                
-                const candidate = data.candidates[0];
-                const part = candidate.content.parts[0];
-                
-                chatHistory.push(candidate.content);
-
-                if (part.functionCall) {
-                    return { functionCall: part.functionCall };
-                } else {
-                    return { text: part.text };
-                }
-
-            } catch (error) {
-                console.error("Gemini API Fetch Error:", error);
-                return { text: "AIとの通信でエラーが発生しました。" };
-            }
+            await searchAndDisplayMovies();
         }
-        
-        async function searchAndDisplayMovies(args) {
+
+        async function searchAndDisplayMovies() {
+            const thinkingBubble = displayMessage("データベースを検索しています...", 'ai', chatBox);
+
             const academyPages = await fetchNotionPages(ACADEMY_DB_ID);
             const watchlistPages = await fetchNotionPages(WATCHLIST_DB_ID);
-            const existingIds = new Set([...academyPages, ...watchlistPages].map(p => p.properties.TMDB?.number).filter(id => id != null));
+            
+            const existingIds = new Set(
+                [...academyPages, ...watchlistPages]
+                .map(p => p.properties.TMDB?.number)
+                .filter(id => id != null)
+            );
 
-            const apiUrl = await buildTmdbUrl(args);
-            if (!apiUrl) return "監督が見つかりませんでした。";
+            const apiUrl = await buildTmdbUrl();
+            if (!apiUrl) {
+                thinkingBubble.innerHTML = "監督が見つかりませんでした。";
+                showSearchModes();
+                return;
+            }
 
             const response = await fetch(apiUrl);
-            if (!response.ok) return "映画情報の取得に失敗しました。";
-            
+            if (!response.ok) {
+                thinkingBubble.innerHTML = "映画情報の取得に失敗しました。";
+                return;
+            }
             const data = await response.json();
             const movies = data.results;
 
             if (!movies || movies.length === 0) {
-                return "条件に合う映画は見つかりませんでした。";
+                thinkingBubble.innerHTML = "条件に合う映画は見つかりませんでした。";
+                showSearchModes();
+                return;
             }
 
-            const thinkingBubble = chatBox.lastChild.querySelector('.chat-bubble-ai');
             renderMovieSelectionTable(movies, existingIds, thinkingBubble);
-            
-            return `${movies.length}件の映画が見つかりました。リストを確認してください。`;
         }
 
-        async function buildTmdbUrl(args) {
+        async function buildTmdbUrl() {
             let endpoint = '';
             const params = new URLSearchParams({ api_key: TMDB_API_KEY, language: 'ja-JP' });
 
-            switch (args.query_type) {
+            switch (conversationState.mode) {
                 case 'now_playing':
                     endpoint = 'movie/now_playing';
-                    if (args.region) params.append('region', args.region);
+                    params.append('region', conversationState.params.region || 'JP');
                     break;
                 case 'upcoming':
                     endpoint = 'movie/upcoming';
-                    if (args.region) params.append('region', args.region);
+                    params.append('region', conversationState.params.region || 'JP');
                     break;
                 case 'discover':
                     endpoint = 'discover/movie';
-                    if (args.year) params.append('primary_release_year', args.year);
-                    if (args.director_name) {
-                        const personSearchUrl = `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(args.director_name)}&language=ja-JP`;
-                        const personRes = await fetch(personSearchUrl);
-                        if (!personRes.ok) return null;
-                        const personData = await personRes.json();
-                        const directorId = personData.results[0]?.id;
-                        if (!directorId) return null;
-                        params.append('with_crew', directorId);
+                    if (conversationState.params.year) {
+                        params.append('primary_release_year', conversationState.params.year);
                     }
-                    if (args.genre_keywords) {
-                        params.append('with_keywords', args.genre_keywords);
+                    if (conversationState.params.genreKeywords) {
+                        const genreListUrl = `https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}&language=ja`;
+                        const genreRes = await fetch(genreListUrl);
+                        const genreData = await genreRes.json();
+                        const foundGenre = genreData.genres.find(g => conversationState.params.genreKeywords.includes(g.name));
+                        if (foundGenre) {
+                            params.append('with_genres', foundGenre.id);
+                        }
                     }
+                    params.append('sort_by', 'popularity.desc');
+                    break;
+                case 'director':
+                    const personSearchUrl = `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(conversationState.params.directorName)}&language=ja-JP`;
+                    const personRes = await fetch(personSearchUrl);
+                    if (!personRes.ok) return null;
+                    const personData = await personRes.json();
+                    const directorId = personData.results[0]?.id;
+                    if (!directorId) return null;
+                    
+                    endpoint = 'discover/movie';
+                    params.append('with_crew', directorId);
                     params.append('sort_by', 'popularity.desc');
                     break;
             }
@@ -599,8 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             displayMessage(`${successCount}件の映画をウォッチリストに追加しました！<br>続けて他の映画も探しますか？`, 'ai', chatBox);
-            chatInput.disabled = false;
-            sendButton.disabled = false;
+            showSearchModes();
         }
 
         async function addSingleMovieToNotion(movieId) {
@@ -659,11 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        displayMessage("こんにちは！何かお探しの映画はありますか？<br>「感動する映画」のように、気分を伝えてくれてもいいですよ。", 'ai', chatBox);
-        chatInput.disabled = false;
-        sendButton.disabled = false;
-        chatInput.focus();
-
+        showSearchModes();
         sendButton.addEventListener('click', handleUserInput);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserInput(); });
     }
